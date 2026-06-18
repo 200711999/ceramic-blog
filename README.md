@@ -1,2 +1,2 @@
-# ceramic-blog-
-Django陶瓷主题博客网站含3D陶瓷展览
+# ceramic-blog
+融合 3D 展示技术的陶瓷文化社区平台设计与实现
