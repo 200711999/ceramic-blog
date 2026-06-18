@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="{% static 'bootstrap-3.4.1-dist/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+    {% block css %}{% endblock %}
+<style>
+    *:focus {
+     outline: none !important;
+}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <!-- 导航栏头部 -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="/index/" class="navbar-brand">陶瓷文化社区</a>
+        </div>
+        <!-- 导航栏主体 -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <!-- 导航栏左部 -->
+            <ul class="nav navbar-nav">
+                <li>
+                    <a href="#">{% block nav_title %}{% endblock %}</a>
+                </li>
+                <li>
+                    <a href="/article/add/">发布文章</a>
+                </li>
+                <li>
+                    <a href="/exhibition/">物品展览</a>
+                </li>
+            </ul>
+            <!-- 导航栏右部 -->
+            {% block nav_right %}
+                <ul class="nav navbar-nav navbar-right">
+                    {% if user.is_authenticated %}
+                        <!-- 通知铃铛 -->
+                        <li class="dropdown" id="notify-dropdown">
+                            <a href="#" class="dropdown-toggle notify-bell" data-toggle="dropdown" role="button" title="通知">
+                                <span class="glyphicon glyphicon-bell"></span>
+                                <span class="notify-badge" id="notify-badge" style="display:none">0</span>
+                            </a>
+                            <ul class="dropdown-menu notify-menu" id="notify-menu">
+                                <li class="notify-menu-header">
+                                    <span>通知</span>
+                                    <a href="#" id="notify-read-all">全部已读</a>
+                                </li>
+                                <li class="notify-menu-list" id="notify-list">
+                                    <li class="notify-empty">暂无通知</li>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><a href="/index/{{ user.username }}" class="navbar-avatar"><img title="{{ user.username }}"
+                                                                         src="/media/{{ user.avatar }}" alt="头像"
+                                                                         width="30" height="30"
+                                                                         style="border-radius:50%;vertical-align:middle"></a></li>
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                               aria-haspopup="true"
+                               aria-expanded="false">更多操作 <span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a data-toggle="modal" data-target="#myModal">修改密码</a></li>
+                                <li><a data-toggle="modal" data-target="#editProfileModal">修改个人信息</a></li>
+                                <li><a href="/set_avatar/">修改头像</a></li>
+                                <li><a href="/backend/">后台管理</a></li>
+                                <li role="separator" class="divider"></li>
+                                <li><a href="/logout/">退出登录</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li><a href="/login/">登录</a></li>
+                        <li><a href="/register/">注册</a></li>
+                    {% endif %}
+
+                </ul>
+            {% endblock %}
+
+        </div>
+    </div>
+
+
+</nav>
+
+<!-- 主体内容 -->
+<div class="container-fluid">
+    {% block main %}
+        <div class="row">
+            <div class="col-md-2">
+                {% block left %}
+                {% endblock %}
+            </div>
+            <div class="col-md-8">
+                {% block content %}
+
+                {% endblock %}
+            </div>
+            <div class="col-md-2">
+                {% block right %}
+
+                {% endblock %}
+            </div>
+        </div>
+    {% endblock %}
+</div>
+
+<!-- Toast container (right-top non-blocking notifications) -->
+<div class="toast-container" id="toast-container"></div>
+
+{% if user.is_authenticated %}
+    <!-- 修改密码模态框 (放在 body 顶层,避免被 navbar 的 backdrop-filter / sticky 困住) -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">修改密码</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="myform" novalidate>
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="username">用户名</label>
+                            <input disabled type="text" class="form-control" id="username" value="{{ user.username }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="old_password">旧密码</label>
+                            <input type="password" class="form-control" id="old_password" placeholder="请输入旧密码">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">新密码</label>
+                            <input type="text" class="form-control" id="password" placeholder="请输入新密码">
+                        </div>
+                        <div class="form-group">
+                            <label for="re_password">确认密码</label>
+                            <input type="text" class="form-control" id="re_password" placeholder="请确认新密码">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="set_password_btn">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改个人信息模态框 -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1" role="dialog" aria-labelledby="editProfileModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="editProfileModalLabel">修改个人信息</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="edit_profile_form" novalidate>
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="edit_username">用户名</label>
+                            <input disabled type="text" class="form-control" id="edit_username" value="{{ user.username }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_email">邮箱</label>
+                            <input type="email" class="form-control" id="edit_email" placeholder="如:abc@example.com" value="{{ user.email }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_phone">手机号码</label>
+                            <input type="text" class="form-control" id="edit_phone" placeholder="11 位手机号" maxlength="11" value="{{ user.phone|default_if_none:'' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_age">年龄</label>
+                            <input type="number" class="form-control" id="edit_age" placeholder="1-150" min="1" max="150" value="{{ user.age|default_if_none:'' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit_gender">性别</label>
+                            <input type="text" class="form-control" id="edit_gender" placeholder="男/女/其他" maxlength="10" value="{{ user.gender|default_if_none:'' }}">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="edit_profile_btn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
+<script src="{% static 'bootstrap-3.4.1-dist/js/bootstrap.min.js' %}"></script>
+<script>
+    // Global toast helper: window.showToast(msg, type)
+    // type: 'success' | 'error' | undefined
+    window.showToast = function (msg, type) {
+        var container = document.getElementById('toast-container');
+        if (!container) return;
+        var el = document.createElement('div');
+        el.className = 'toast' + (type ? ' toast--' + type : '');
+        el.textContent = msg;
+        container.appendChild(el);
+        setTimeout(function () {
+            el.classList.add('toast--leaving');
+            setTimeout(function () { el.remove(); }, 250);
+        }, 2400);
+    };
+
+    // Loading-state helper for buttons
+    window.setBtnLoading = function ($btn, loading, loadingText) {
+        if (loading) {
+            $btn.data('orig-text', $btn.text());
+            $btn.addClass('btn-loading').prop('disabled', true);
+            if (loadingText) $btn.text(loadingText);
+        } else {
+            $btn.removeClass('btn-loading').prop('disabled', false);
+            var orig = $btn.data('orig-text');
+            if (orig) $btn.text(orig);
+        }
+    };
+</script>
+{% block js %}{% endblock %}
+<script>
+    $("#set_password_btn").click(function () {
+        var $btn = $(this);
+        var old_password = $("#old_password").val();
+        var password = $("#password").val();
+        var re_password = $("#re_password").val();
+
+        window.setBtnLoading($btn, true, '提交中…');
+
+        $.ajax({
+            url: '/set_password/',
+            type: 'post',
+            data: {
+                old_password: old_password,
+                password: password,
+                re_password: re_password,
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            success: function (res) {
+                window.setBtnLoading($btn, false);
+                window.showToast(res.msg, res.code === 200 ? 'success' : 'error');
+                if (res.code === 200) {
+                    setTimeout(function () { location.reload(); }, 800);
+                }
+            },
+            error: function () {
+                window.setBtnLoading($btn, false);
+                window.showToast('请求失败,请稍后再试', 'error');
+            }
+        })
+
+    })
+
+    // 修改个人信息提交
+    $("#edit_profile_btn").click(function () {
+        var $btn = $(this);
+        window.setBtnLoading($btn, true, '保存中…');
+
+        $.ajax({
+            url: '/edit_profile/',
+            type: 'post',
+            data: {
+                email: $("#edit_email").val(),
+                phone: $("#edit_phone").val(),
+                age: $("#edit_age").val(),
+                gender: $("#edit_gender").val(),
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            success: function (res) {
+                window.setBtnLoading($btn, false);
+                window.showToast(res.msg, res.code === 200 ? 'success' : 'error');
+                if (res.code === 200) {
+                    $("#editProfileModal").modal('hide');
+                    setTimeout(function () { location.reload(); }, 800);
+                }
+            },
+            error: function () {
+                window.setBtnLoading($btn, false);
+                window.showToast('请求失败,请稍后再试', 'error');
+            }
+        })
+    })
+
+</script>
+
+<!-- AI 助手悬浮插件 -->
+<div class="ai-float-btn" id="ai-float-btn" title="AI 助手">
+    <span class="glyphicon glyphicon-comment"></span>
+</div>
+
+<div class="ai-chat-widget" id="ai-chat-widget">
+    <div class="ai-chat-widget-header">
+        <span><span class="glyphicon glyphicon-comment"></span> AI 助手</span>
+        <button type="button" class="close" id="ai-chat-close">&times;</button>
+    </div>
+    <div class="ai-chat-widget-body" id="ai-chat-widget-body">
+        <div class="chat-msg chat-msg--ai">
+            <div class="chat-bubble">你好!我是论坛 AI 助手,可以帮你解答技术问题、生活问题,有什么想问的吗?</div>
+        </div>
+    </div>
+    <div class="ai-chat-widget-footer">
+        <div class="input-group">
+            <input type="text" class="form-control" id="ai-widget-input" placeholder="输入问题,按 Enter 发送…" maxlength="500">
+            <span class="input-group-btn">
+                <button class="btn btn-primary" type="button" id="ai-widget-send">
+                    <span class="glyphicon glyphicon-send"></span>
+                </button>
+            </span>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var $floatBtn = $("#ai-float-btn");
+    var $widget = $("#ai-chat-widget");
+    var $close = $("#ai-chat-close");
+    var $body = $("#ai-chat-widget-body");
+    var $input = $("#ai-widget-input");
+    var $send = $("#ai-widget-send");
+
+    $floatBtn.on("click", function () {
+        $widget.toggleClass("open");
+        $floatBtn.toggleClass("active");
+        if ($widget.hasClass("open")) {
+            $input.focus();
+            scrollToBottom();
+        }
+    });
+
+    $close.on("click", function () {
+        $widget.removeClass("open");
+        $floatBtn.removeClass("active");
+    });
+
+    function scrollToBottom() {
+        $body.scrollTop($body[0].scrollHeight);
+    }
+
+    function appendMsg(text, isUser) {
+        var cls = isUser ? 'chat-msg--user' : 'chat-msg--ai';
+        var html = '<div class="chat-msg ' + cls + '"><div class="chat-bubble">' + escapeHtml(text) + '</div></div>';
+        $body.append(html);
+        scrollToBottom();
+    }
+
+    function appendLoading() {
+        var html = '<div class="chat-msg chat-msg--ai" id="ai-widget-loading"><div class="chat-bubble"><span class="dot-pulse"></span> 思考中…</div></div>';
+        $body.append(html);
+        scrollToBottom();
+    }
+
+    function removeLoading() {
+        $("#ai-widget-loading").remove();
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function sendMessage() {
+        var text = $input.val().trim();
+        if (!text) return;
+
+        appendMsg(text, true);
+        $input.val('');
+        appendLoading();
+        window.setBtnLoading($send, true);
+
+        $.ajax({
+            url: '/ai_chat/',
+            type: 'post',
+            data: {
+                question: text,
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            success: function (res) {
+                removeLoading();
+                window.setBtnLoading($send, false);
+                if (res.code === 200) {
+                    appendMsg(res.answer, false);
+                } else {
+                    appendMsg('抱歉,' + (res.msg || '出错了'), false);
+                }
+            },
+            error: function () {
+                removeLoading();
+                window.setBtnLoading($send, false);
+                appendMsg('网络请求失败,请检查 API 配置或网络', false);
+            }
+        });
+    }
+
+    $send.on("click", sendMessage);
+    $input.on("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+})();
+</script>
+
+<!-- 瓷韵集公告弹窗 -->
+<div class="welcome-overlay" id="welcome-overlay" style="display:none">
+    <div class="welcome-dialog">
+        <button type="button" class="welcome-close" id="welcome-close">&times;</button>
+        <div class="welcome-image" id="popup-image" style="display:none">
+            <img src="" alt="公告配图" id="popup-img">
+        </div>
+        <div class="welcome-body">
+            <h2 class="welcome-title" id="popup-title"></h2>
+            <p class="welcome-text" id="popup-content"></p>
+        </div>
+        <div class="welcome-actions">
+            <button type="button" class="welcome-btn welcome-btn--primary" id="welcome-enter">进入博客</button>
+            <button type="button" class="welcome-btn welcome-btn--secondary" id="welcome-dismiss">关闭</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .welcome-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+        background: rgba(45, 42, 38, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: welcomeFadeIn 0.35s ease;
+    }
+    @keyframes welcomeFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .welcome-overlay.is-closing {
+        animation: welcomeFadeOut 0.25s ease forwards;
+    }
+    @keyframes welcomeFadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+
+    .welcome-dialog {
+        position: relative;
+        max-width: 560px;
+        width: 92%;
+        background: #F6F2E9;
+        border: 1px solid #C8B89E;
+        border-radius: 16px;
+        box-shadow: 0 12px 48px rgba(45, 42, 38, 0.2);
+        overflow: hidden;
+        animation: welcomeSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes welcomeSlideUp {
+        from { transform: translateY(40px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .welcome-close {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        background: none;
+        border: none;
+        font-size: 28px;
+        line-height: 1;
+        color: #C8B89E;
+        cursor: pointer;
+        z-index: 2;
+        transition: color 0.2s;
+        padding: 0 4px;
+    }
+    .welcome-close:hover {
+        color: #8B7355;
+    }
+
+    .welcome-image {
+        width: 28%;
+        float: left;
+        padding: 28px 0 28px 24px;
+    }
+    .welcome-image img {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        display: block;
+        mix-blend-mode: multiply;
+        isolation: isolate;
+    }
+
+    .welcome-body {
+        padding: 28px 28px 20px;
+        overflow: hidden;
+    }
+    .welcome-title {
+        font-size: 19px;
+        font-weight: 700;
+        color: #4A3828;
+        margin: 0 0 16px;
+        line-height: 1.45;
+        letter-spacing: 0.3px;
+    }
+    .welcome-text {
+        font-size: 14px;
+        color: #6B5D4F;
+        line-height: 1.75;
+        margin: 0 0 10px;
+    }
+    .welcome-highlight {
+        color: #5A8982;
+        font-weight: 600;
+    }
+
+    .welcome-actions {
+        clear: both;
+        display: flex;
+        gap: 12px;
+        padding: 0 28px 28px;
+    }
+    .welcome-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        letter-spacing: 0.3px;
+    }
+    .welcome-btn--primary {
+        background: #5A8982;
+        color: #fff;
+    }
+    .welcome-btn--primary:hover {
+        background: #4A756F;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(90, 137, 130, 0.35);
+    }
+    .welcome-btn--secondary {
+        background: #F6F2E9;
+        color: #6B5D4F;
+        border: 1px solid #C8B89E;
+    }
+    .welcome-btn--secondary:hover {
+        background: #EDE7D8;
+        border-color: #A8987E;
+    }
+
+    /* ---------- 通知铃铛 ---------- */
+    .notify-bell {
+        position: relative;
+        font-size: 18px;
+        padding: 15px 10px !important;
+    }
+    .notify-badge {
+        position: absolute;
+        top: 8px;
+        right: 4px;
+        min-width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        background: #e74c3c;
+        color: #fff;
+        font-size: 11px;
+        line-height: 16px;
+        text-align: center;
+        padding: 0 4px;
+    }
+    .notify-menu {
+        min-width: 340px;
+        max-height: 420px;
+        overflow-y: auto;
+    }
+    .notify-menu-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 16px;
+        border-bottom: 1px solid #e8e0d5;
+        font-weight: 600;
+        color: #4A3828;
+    }
+    .notify-menu-header a {
+        font-weight: 400;
+        font-size: 12px;
+        color: #5A8982;
+    }
+    .notify-empty {
+        padding: 30px 0;
+        text-align: center;
+        color: #999;
+        font-size: 13px;
+    }
+    .notify-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 16px;
+        border-bottom: 1px solid #f0ebe0;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .notify-item:hover { background: #f8f4ed; }
+    .notify-item.unread { background: #fdf9f3; }
+    .notify-item-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .notify-item-body { flex: 1; min-width: 0; }
+    .notify-item-body .notify-text {
+        font-size: 13px;
+        color: #4A3828;
+        line-height: 1.5;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .notify-item-body .notify-text strong { color: #2a8a7a; }
+    .notify-item-body .notify-time {
+        font-size: 11px;
+        color: #b0a89e;
+        margin-top: 2px;
+    }
+
+    /* ---------- 右侧公告栏 ---------- */
+    .sidebar-announcement {
+        padding: 10px 0;
+        border-bottom: 1px dashed #e8e0d5;
+    }
+    .sidebar-announcement:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    .sidebar-announcement--latest {
+        background: #fdf9f3;
+        margin: -8px -12px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+    }
+    .sidebar-announcement-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #4A3828;
+        margin-bottom: 4px;
+        line-height: 1.4;
+    }
+    .sidebar-announcement--latest .sidebar-announcement-title {
+        color: #2a8a7a;
+    }
+    .sidebar-announcement-body {
+        font-size: 12px;
+        color: #6B5D4F;
+        line-height: 1.6;
+        word-break: break-all;
+    }
+    .sidebar-announcement-time {
+        font-size: 11px;
+        color: #b0a89e;
+        margin-top: 4px;
+    }
+
+    /* ---------- 关注按钮 ---------- */
+    .follow-btn {
+        width: 100%;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 6px 12px;
+        margin-top: 4px;
+        margin-bottom: 8px;
+        transition: all 0.2s;
+    }
+    .follow-btn:not(.following) {
+        background: #5A8982;
+        color: #fff;
+        border-color: #5A8982;
+    }
+    .follow-btn:not(.following):hover {
+        background: #4A756F;
+        border-color: #4A756F;
+    }
+    .follow-btn.following {
+        background: #f8f4ed;
+        color: #6B5D4F;
+        border-color: #C8B89E;
+    }
+    .follow-btn.following:hover {
+        background: #e74c3c;
+        color: #fff;
+        border-color: #e74c3c;
+    }
+
+    /* ---------- 关注动态 ---------- */
+    .followed-article {
+        padding: 6px 0;
+        border-bottom: 1px dashed #ebdfcf;
+    }
+    .followed-article:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    .followed-article a {
+        font-size: 13px;
+        color: #4A3828;
+    }
+    .followed-article a:hover {
+        color: #5A8982;
+    }
+    .fa-meta {
+        display: block;
+        font-size: 11px;
+        color: #b0a89e;
+    }
+
+    .follow-user-item {
+        padding: 4px 0;
+    }
+    .follow-user-item a {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #4A3828;
+    }
+    .follow-user-item a:hover {
+        color: #5A8982;
+    }
+    .follow-user-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+</style>
+
+<script>
+(function () {
+    var overlay = document.getElementById('welcome-overlay');
+    if (!overlay) return;
+
+    if (window.location.pathname !== '/index/') {
+        overlay.remove();
+        return;
+    }
+
+    var $title = document.getElementById('popup-title');
+    var $content = document.getElementById('popup-content');
+    var $image = document.getElementById('popup-image');
+    var $img = document.getElementById('popup-img');
+    var currentAnnId = null;
+
+    function closeOverlay() {
+        overlay.classList.add('is-closing');
+        setTimeout(function () { overlay.style.display = 'none'; overlay.classList.remove('is-closing'); }, 250);
+    }
+
+    document.getElementById('welcome-close').addEventListener('click', function () { dismissAndClose(); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) dismissAndClose(); });
+    document.getElementById('welcome-enter').addEventListener('click', function () { closeOverlay(); });
+    document.getElementById('welcome-dismiss').addEventListener('click', function () { dismissAndClose(); });
+
+    function dismissAndClose() {
+        if (currentAnnId) {
+            $.post('/announcement/dismiss/', {
+                announcement_id: currentAnnId,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            });
+        }
+        closeOverlay();
+    }
+
+    // Fetch latest announcement
+    $.get('/announcement/latest/', function (res) {
+        if (res.code !== 200 || !res.announcement) return;
+        if (res.dismissed) return;
+
+        currentAnnId = res.announcement.id;
+        $title.textContent = res.announcement.title;
+        $content.textContent = res.announcement.content;
+        if (res.announcement.image) {
+            $img.src = '/media/' + res.announcement.image;
+            $image.style.display = '';
+        }
+        overlay.style.display = '';
+    });
+})();
+</script>
+
+{% if user.is_authenticated %}
+<script>
+// ---- 通知系统 ----
+(function () {
+    var $badge = $('#notify-badge');
+    var $list = $('#notify-list');
+
+    // 页面加载时获取未读数
+    $.get('/notifications/', function (res) {
+        if (res.code === 200 && res.unread_count > 0) {
+            $badge.text(res.unread_count > 99 ? '99+' : res.unread_count).show();
+        }
+    });
+
+    // 下拉展开时加载列表
+    $('#notify-dropdown').on('show.bs.dropdown', function () {
+        $.get('/notifications/', function (res) {
+            if (res.code !== 200) return;
+            $badge.hide();
+            if (!res.notifications.length) {
+                $list.html('<li class="notify-empty">暂无通知</li>');
+                return;
+            }
+            var html = '';
+            res.notifications.forEach(function (n) {
+                var cls = n.is_read ? '' : ' unread';
+                var text;
+                if (n.verb === 'followed') {
+                    text = '<strong>' + n.actor_name + '</strong> ' + n.verb_display;
+                } else if (n.verb === 'published') {
+                    text = '<strong>' + n.actor_name + '</strong> ' + n.verb_display + '《' + n.article_title + '》';
+                } else if (n.verb === 'report_resolved' || n.verb === 'report_dismissed') {
+                    text = n.verb_display + '《' + n.article_title + '》';
+                } else if (n.verb === 'commented') {
+                    text = '<strong>' + n.actor_name + '</strong> ' + n.verb_display + ' 你的文章《' + n.article_title + '》';
+                } else if (n.verb === 'replied') {
+                    text = '<strong>' + n.actor_name + '</strong> 在《' + n.article_title + '》中' + n.verb_display;
+                } else if (n.verb === 'liked') {
+                    text = '<strong>' + n.actor_name + '</strong> ' + n.verb_display + ' 在《' + n.article_title + '》';
+                } else {
+                    text = '<strong>' + n.actor_name + '</strong> ' + n.verb_display + ' 你的文章《' + n.article_title + '》';
+                }
+                html += '<li class="notify-item' + cls + '" data-id="' + n.id + '" data-article="' + (n.article_id || '') + '" data-article-author="' + (n.article_author || '') + '" data-actor="' + n.actor_name + '" data-verb="' + n.verb + '">' +
+                    '<img class="notify-item-avatar" src="/media/' + n.actor_avatar + '">' +
+                    '<div class="notify-item-body">' +
+                        '<div class="notify-text">' + text + '</div>' +
+                        '<div class="notify-time">' + n.time + '</div>' +
+                    '</div>' +
+                '</li>';
+            });
+            $list.html(html);
+        });
+    });
+
+    // 点击通知 → 标记已读 + 跳转
+    $list.on('click', '.notify-item', function () {
+        var $item = $(this);
+        var id = $item.data('id');
+        var articleId = $item.data('article');
+        var articleAuthor = $item.data('article-author');
+        var actor = $item.data('actor');
+        $.post('/notifications/', { id: id, csrfmiddlewaretoken: '{{ csrf_token }}' });
+        if (articleId) {
+            window.location.href = '/index/' + (articleAuthor || actor) + '/p/' + articleId + '/';
+        } else {
+            window.location.href = '/index/' + actor + '/';
+        }
+    });
+
+    // 全部已读
+    $('#notify-read-all').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $.post('/notifications/', { id: 'all', csrfmiddlewaretoken: '{{ csrf_token }}' }, function () {
+            $list.find('.unread').removeClass('unread');
+            $badge.hide();
+        });
+    });
+})();
+</script>
+{% endif %}
+
+</body>
+</html>

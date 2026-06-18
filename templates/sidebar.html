@@ -1,0 +1,42 @@
+<div class="panel">
+    <div class="panel-heading">
+        <h3 class="panel-title">文章分类</h3>
+    </div>
+    <div class="panel-body">
+        {% for pk,category_name,category_count in category_info %}
+            <div>
+                <a href="/index/{{ user_obj.username }}/category/{{ pk }}/">{{ category_name }} <span style="color:var(--text-faint)">({{ category_count }})</span></a>
+            </div>
+        {% empty %}
+            <div style="color:var(--text-muted);font-size:13px">暂无分类</div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-heading">
+        <h3 class="panel-title">文章标签</h3>
+    </div>
+    <div class="panel-body">
+        {% for pk,name,count in tag_info %}
+            <div><a href="/index/{{ user_obj.username }}/tag/{{ pk }}/">{{ name }} <span style="color:var(--text-faint)">({{ count }})</span></a></div>
+        {% empty %}
+            <div style="color:var(--text-muted);font-size:13px">暂无标签</div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-heading">
+        <h3 class="panel-title">日期归档</h3>
+    </div>
+    <div class="panel-body">
+        {% for year,month,count in date_info %}
+            <div>
+                <a href="/index/{{ user_obj.username }}/date/{{ year }}-{{ month }}/">{{ year }} 年 {{ month }} 月 <span style="color:var(--text-faint)">({{ count }})</span></a>
+            </div>
+        {% empty %}
+            <div style="color:var(--text-muted);font-size:13px">暂无归档</div>
+        {% endfor %}
+    </div>
+</div>

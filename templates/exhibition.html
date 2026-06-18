@@ -1,0 +1,891 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}陶瓷艺术展览{% endblock %}
+{% block nav_title %}陶瓷艺术展览{% endblock %}
+
+{% block css %}
+<style>
+/* ===== 卡片网格 ===== */
+.exhibition-page {
+    padding: 10px 0 60px;
+}
+.exhibition-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-top: 10px;
+}
+.exhibition-header h1 {
+    font-size: 32px;
+    font-weight: 300;
+    color: #333;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+}
+.exhibition-header p {
+    color: #888;
+    font-size: 15px;
+}
+
+.exhibition-card {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    transition: all 0.35s ease;
+    cursor: pointer;
+    margin-bottom: 30px;
+    border: 1px solid #f0f0f0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.exhibition-card__img-wrap {
+    flex-shrink: 0;
+}
+.exhibition-card__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.exhibition-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+    border-color: #e0e0e0;
+}
+.exhibition-card__img-wrap {
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    background: #f8f8f8;
+}
+.exhibition-card__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+}
+.exhibition-card:hover .exhibition-card__img {
+    transform: scale(1.05);
+}
+.exhibition-card__body {
+    padding: 18px 20px 20px;
+}
+.exhibition-card__title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+.exhibition-card__desc {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.7;
+    margin: 0;
+}
+.exhibition-card__badge {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #bbb;
+    border: 1px solid #eee;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+.exhibition-card:hover .exhibition-card__badge {
+    color: #999;
+    border-color: #ddd;
+}
+
+/* ===== 3D查看器遮罩层 ===== */
+.viewer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0d0d0f;
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.viewer-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+.viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 28px;
+    color: #fff;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(0,0,0,0.5);
+}
+.viewer-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 1px;
+}
+.viewer-close {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.2s;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.viewer-close:hover {
+    opacity: 1;
+    background: rgba(255,255,255,0.15);
+}
+.viewer-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+.viewer-stage {
+    flex: 1;
+    position: relative;
+    background: 
+        radial-gradient(ellipse at 50% 85%, rgba(30, 28, 26, 0.9) 0%, transparent 60%),
+        radial-gradient(ellipse at 30% 20%, rgba(60,55,50,0.1) 0%, transparent 50%),
+        #0d0d0f;
+}
+#threeCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.viewer-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    letter-spacing: 2px;
+    pointer-events: none;
+    display: none;
+    z-index: 5;
+    text-align: center;
+}
+.viewer-loading.active {
+    display: block;
+}
+.viewer-loading::after {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-top-color: rgba(255,255,255,0.7);
+    border-radius: 50%;
+    margin: 12px auto 0;
+    animation: viewer-spin 0.8s linear infinite;
+}
+@keyframes viewer-spin {
+    to { transform: rotate(360deg); }
+}
+.viewer-info {
+    width: 300px;
+    padding: 24px;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.3);
+}
+.viewer-info h4 {
+    color: #fff;
+    font-size: 16px;
+    margin: 0 0 8px;
+    font-weight: 500;
+}
+.viewer-info p {
+    font-size: 13px;
+    line-height: 1.8;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+}
+.viewer-info__img {
+    width: 100%;
+    border-radius: 8px;
+    opacity: 0.8;
+}
+.viewer-info__meta {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.viewer-info__meta-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 6px;
+}
+.viewer-info__meta-item span:first-child {
+    color: rgba(255,255,255,0.5);
+}
+
+/* 操作提示 */
+.viewer-hint {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.3);
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+@media (max-width: 768px) {
+    .viewer-info { display: none; }
+    .viewer-hint { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="exhibition-page">
+    <div class="exhibition-header">
+        <h1>陶瓷艺术展览</h1>
+        <p>点击卡片进入三维鉴赏空间</p>
+    </div>
+
+    <div class="row">
+        {% for item in items %}
+        <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="exhibition-card"
+                 data-model-url="{% static item.model %}"
+                 data-title="{{ item.title }}"
+                 data-desc="{{ item.desc }}"
+                 data-cover="{% static item.cover %}">
+                <div class="exhibition-card__img-wrap">
+                    <img src="{% static item.cover %}" alt="{{ item.title }}" class="exhibition-card__img">
+                </div>
+                <div class="exhibition-card__body">
+                    <h4 class="exhibition-card__title">{{ item.title }}</h4>
+                    <p class="exhibition-card__desc">{{ item.desc }}</p>
+                    <span class="exhibition-card__badge">3D 鉴赏</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 3D查看器遮罩层 -->
+<div class="viewer-overlay" id="viewerOverlay">
+    <div class="viewer-header">
+        <h3 id="viewerTitle">展品详情</h3>
+        <button class="viewer-close" id="viewerClose">&times;</button>
+    </div>
+    <div class="viewer-body">
+        <div class="viewer-stage" id="viewerStage">
+            <div class="viewer-loading" id="viewerLoading">加载中...</div>
+            <canvas id="threeCanvas"></canvas>
+            <div class="viewer-hint">拖动旋转 | 滚轮缩放</div>
+        </div>
+        <div class="viewer-info" id="viewerInfo">
+            <div>
+                <h4 id="infoTitle"></h4>
+                <p id="infoDesc"></p>
+            </div>
+            <img id="infoImg" class="viewer-info__img" src="" alt="">
+            <div class="viewer-info__meta">
+                <div class="viewer-info__meta-item">
+                    <span>类别</span>
+                    <span>陶瓷艺术</span>
+                </div>
+                <div class="viewer-info__meta-item">
+                    <span>展示方式</span>
+                    <span>WebGL 三维模型</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<!-- Three.js 核心库 -->
+<script src="{% static 'js/three.min.js' %}"></script>
+<!-- GLTF模型加载器 -->
+<script src="{% static 'js/GLTFLoader.js' %}"></script>
+<!-- 轨道控制器 -->
+<script src="{% static 'js/OrbitControls.js' %}"></script>
+
+<script>
+(function() {
+    // ===== 全局变量声明 =====
+    var overlay = document.getElementById('viewerOverlay');
+    var viewerStage = document.getElementById('viewerStage');
+    var viewerCanvas = document.getElementById('threeCanvas');
+    var viewerLoading = document.getElementById('viewerLoading');
+    var viewerTitle = document.getElementById('viewerTitle');
+    var closeBtn = document.getElementById('viewerClose');
+    var infoTitle = document.getElementById('infoTitle');
+    var infoDesc = document.getElementById('infoDesc');
+    var infoImg = document.getElementById('infoImg');
+
+    // Three.js 核心对象（延迟初始化）
+    var scene, camera, renderer, controls, model;
+    
+    // 动画帧ID（用于取消动画）
+    var animationId = null;
+    
+    // 当前加载的模型URL（防止重复加载）
+    var currentModelUrl = null;
+
+    // ===== 用户灯光系统 =====
+    var userLight = null;
+    var lightRaycaster = new THREE.Raycaster();
+    var lightMouse = new THREE.Vector2();
+    // 点击 vs 拖拽
+    var ptrDownPos = new THREE.Vector2();
+    var ptrDownTime = 0;
+    var CLICK_DIST = 3;
+    var CLICK_MS = 300;
+    var LONG_PRESS_MS = 500;
+    // 亮度循环
+    var isBrightnessCycling = false;
+    var cycleStartTime = 0;
+    var longPressTimer = null;
+    var INTENSITY_MIN = 0.5;
+    var INTENSITY_MAX = 8.0;
+    var CYCLE_PERIOD = 3.0; // 秒/完整周期
+
+    // ===== 性能优化配置 =====
+    var PERF_CONFIG = {
+        // 渲染器配置
+        pixelRatio: Math.min(window.devicePixelRatio, 1.5),  // 限制像素比，防止高分辨率设备卡顿
+        antialias: false,                                    // 关闭抗锯齿，提升性能
+        powerPreference: 'high-performance',                 // 优先使用高性能GPU
+        
+        // 相机配置
+        fov: 35,                                             // 较小视场角，减少渲染范围
+        near: 0.1,
+        far: 100,
+        
+        // 控制器配置
+        enableDamping: true,                                 // 启用阻尼，平滑拖动
+        dampingFactor: 0.05,                                 // 阻尼系数
+        minDistance: 1.5,                                    // 最小缩放距离
+        maxDistance: 8,                                      // 最大缩放距离
+        rotateSpeed: 0.8,                                    // 旋转速度
+        zoomSpeed: 1.0,                                      // 缩放速度
+        
+        // 灯光配置
+        ambientIntensity: 0.4,                               // 环境光强度
+        directionalIntensity: 0.8,                           // 方向光强度
+        
+        // 动画配置
+        targetFps: 60,                                       // 目标帧率
+        maxDelta: 0.1                                        // 最大帧时间差
+    };
+
+    // ===== 初始化 Three.js 场景 =====
+    function initThreeJS() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0d0d0f);
+        scene.fog = new THREE.FogExp2(0x0d0d0f, 0.06);
+
+        var aspect = viewerStage.clientWidth / viewerStage.clientHeight;
+        camera = new THREE.PerspectiveCamera(42, aspect, 0.1, 50);
+        camera.position.set(0, 1.4, 3.8);
+
+        renderer = new THREE.WebGLRenderer({
+            canvas: viewerCanvas,
+            antialias: true,
+            powerPreference: 'high-performance',
+            alpha: false
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(viewerStage.clientWidth, viewerStage.clientHeight);
+        renderer.setClearColor(0x0d0d0f, 1);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 1.2;
+        controls.maxDistance = 8;
+        controls.rotateSpeed = 0.5;
+        controls.target.set(0, 0.1, 0);
+
+        // 地面
+        var groundGeo = new THREE.CircleGeometry(6, 64);
+        var groundMat = new THREE.MeshStandardMaterial({
+            color: 0x0a0a0a,
+            roughness: 0.75,
+            metalness: 0.15
+        });
+        var ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -1.3;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // 展台底座
+        var pedestalGeo = new THREE.CylinderGeometry(0.45, 0.55, 0.2, 64);
+        var pedestalMat = new THREE.MeshStandardMaterial({
+            color: 0x1a1a1a,
+            roughness: 0.2,
+            metalness: 0.6
+        });
+        var pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
+        pedestal.position.y = -1.2;
+        pedestal.castShadow = true;
+        pedestal.receiveShadow = true;
+        scene.add(pedestal);
+
+        // 隐形点击平面（用于放置灯光）
+        var cpGeo = new THREE.PlaneGeometry(12, 12);
+        var cpMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+        var clickPlane = new THREE.Mesh(cpGeo, cpMat);
+        clickPlane.rotation.x = -Math.PI / 2;
+        clickPlane.position.y = -1.22;
+        clickPlane.name = 'clickPlane';
+        scene.add(clickPlane);
+
+        setupLights();
+        startAnimationLoop();
+    }
+
+    // ===== 设置灯光 =====
+    function setupLights() {
+        var ambient = new THREE.AmbientLight(0xffffff, 0.1);
+        scene.add(ambient);
+
+        var spot = new THREE.SpotLight(0xfff0dd, 4.0);
+        spot.position.set(2.5, 4.5, 2.5);
+        spot.angle = Math.PI / 6;
+        spot.penumbra = 0.4;
+        spot.decay = 2;
+        spot.distance = 25;
+        spot.castShadow = true;
+        scene.add(spot);
+
+        var fill = new THREE.DirectionalLight(0xb8c8d8, 0.5);
+        fill.position.set(-3, 2, -1);
+        scene.add(fill);
+
+        var rim = new THREE.PointLight(0xffe0b0, 0.7);
+        rim.position.set(0, 1.5, -3.5);
+        scene.add(rim);
+    }
+
+    // ===== 加载模型/照片 =====
+    function loadModel(url) {
+        if (currentModelUrl === url) return;
+        viewerLoading.classList.add('active');
+
+        if (model) {
+            scene.remove(model);
+            model.traverse(function(obj) {
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) {
+                    if (Array.isArray(obj.material)) {
+                        obj.material.forEach(function(m) { m.dispose(); });
+                    } else {
+                        obj.material.dispose();
+                    }
+                }
+            });
+            model = null;
+        }
+
+        currentModelUrl = url;
+
+        var cleanUrl = url.split('?')[0];
+        var isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(cleanUrl);
+        if (isImage) {
+            loadPhoto(url);
+        } else {
+            loadGLB(url);
+        }
+    }
+
+    function loadPhoto(url) {
+        var loader = new THREE.TextureLoader();
+        loader.load(
+            url,
+            function(texture) {
+                var img = texture.image;
+                var aspect = img.width / img.height;
+                var h = 1.4;
+                var w = h * aspect;
+
+                var group = new THREE.Group();
+
+                // 展品：薄盒子，正面贴照片
+                var boxGeo = new THREE.BoxGeometry(w, h, 0.06);
+                var sideMat = new THREE.MeshStandardMaterial({
+                    color: 0x111111,
+                    roughness: 0.5,
+                    metalness: 0.1
+                });
+                var frontMat = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    roughness: 0.3,
+                    metalness: 0.05,
+                    side: THREE.DoubleSide
+                });
+                var exhibit = new THREE.Mesh(boxGeo, [
+                    sideMat, sideMat, sideMat, sideMat, frontMat, sideMat
+                ]);
+                exhibit.position.y = 0.2;
+                exhibit.castShadow = true;
+                group.add(exhibit);
+
+                scene.add(group);
+                model = group;
+
+                centerPhoto(w, h);
+                viewerLoading.classList.remove('active');
+            },
+            undefined,
+            function(err) {
+                console.error('照片加载失败:', err);
+                viewerLoading.textContent = '加载失败';
+            }
+        );
+    }
+
+    function loadGLB(url) {
+        var loader = new THREE.GLTFLoader();
+        loader.load(
+            url,
+            function(gltf) {
+                model = gltf.scene;
+                model.traverse(function(child) {
+                    if (child.isMesh && child.material) {
+                        child.material.needsUpdate = true;
+                    }
+                });
+                scene.add(model);
+                centerModel();
+                viewerLoading.classList.remove('active');
+            },
+            function(xhr) {
+                var percent = Math.round((xhr.loaded / xhr.total) * 100);
+                viewerLoading.textContent = '加载中 ' + percent + '%';
+            },
+            function(error) {
+                console.error('GLB加载失败:', error);
+                viewerLoading.textContent = '加载失败';
+            }
+        );
+    }
+
+    function centerPhoto(w, h) {
+        var maxDim = Math.max(w, h);
+        var dist = Math.max(maxDim * 1.5, 2.2);
+        controls.target.set(0, 0.15, 0);
+        camera.position.set(0, 1.2, dist);
+        camera.lookAt(controls.target);
+        controls.update();
+    }
+
+    function centerModel() {
+        if (!model) return;
+        var box = new THREE.Box3().setFromObject(model);
+        var center = box.getCenter(new THREE.Vector3());
+        var size = box.getSize(new THREE.Vector3());
+        model.position.sub(center);
+        var maxDim = Math.max(size.x, size.y, size.z);
+        var cameraDistance = Math.max(maxDim * 2.2, 1.5);
+        controls.target.set(0, size.y / 2, 0);
+        controls.minDistance = maxDim * 0.3;
+        controls.maxDistance = maxDim * 8;
+        var targetPos = new THREE.Vector3(0, size.y * 0.6, cameraDistance);
+        camera.position.copy(targetPos);
+        camera.lookAt(controls.target);
+    }
+
+    // ===== 用户灯光管理 =====
+    function removeUserLight() {
+        if (!userLight) return;
+        scene.remove(userLight.pointLight);
+        scene.remove(userLight.indicator);
+        userLight.indicator.geometry.dispose();
+        userLight.indicator.material.dispose();
+        userLight = null;
+    }
+
+    function placeLightAt(pos) {
+        removeUserLight();
+        var light = new THREE.PointLight(0xffeedd, 3.0, 8, 2);
+        light.position.copy(pos);
+        light.position.y += 0.12;
+        light.castShadow = true;
+        scene.add(light);
+
+        var indGeo = new THREE.SphereGeometry(0.05, 16, 16);
+        var indMat = new THREE.MeshStandardMaterial({
+            color: 0xffcc44,
+            roughness: 0.2,
+            emissive: 0xff6600,
+            emissiveIntensity: 0.9
+        });
+        var indicator = new THREE.Mesh(indGeo, indMat);
+        indicator.position.copy(light.position);
+        scene.add(indicator);
+
+        userLight = { pointLight: light, indicator: indicator };
+    }
+
+    function startBrightnessCycle() {
+        if (!userLight) return;
+        isBrightnessCycling = true;
+        cycleStartTime = performance.now();
+    }
+
+    function stopBrightnessCycle() {
+        isBrightnessCycling = false;
+    }
+
+    function updateBrightnessCycle(now) {
+        if (!isBrightnessCycling || !userLight) return;
+        var t = ((now - cycleStartTime) / 1000) % CYCLE_PERIOD;
+        var v = Math.sin((t / CYCLE_PERIOD) * Math.PI * 2);
+        var intensity = INTENSITY_MIN + (INTENSITY_MAX - INTENSITY_MIN) * (v + 1) / 2;
+        userLight.pointLight.intensity = intensity;
+        var s = 1 + (intensity / INTENSITY_MAX) * 1.5;
+        userLight.indicator.scale.setScalar(s);
+        userLight.indicator.material.emissiveIntensity = 0.3 + (intensity / INTENSITY_MAX) * 1.5;
+    }
+
+    // ===== 指针事件 =====
+    function getLightMouse(e) {
+        var r = viewerCanvas.getBoundingClientRect();
+        lightMouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+        lightMouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    }
+
+    function onLightPointerDown(e) {
+        ptrDownPos.set(e.clientX, e.clientY);
+        ptrDownTime = performance.now();
+        getLightMouse(e);
+        lightRaycaster.setFromCamera(lightMouse, camera);
+        if (userLight) {
+            var hits = lightRaycaster.intersectObject(userLight.indicator);
+            if (hits.length > 0) {
+                longPressTimer = setTimeout(function() {
+                    startBrightnessCycle();
+                }, LONG_PRESS_MS);
+            }
+        }
+    }
+
+    function onLightPointerMove(e) {
+        var dx = e.clientX - ptrDownPos.x;
+        var dy = e.clientY - ptrDownPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) > CLICK_DIST) {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+            if (isBrightnessCycling) stopBrightnessCycle();
+        }
+    }
+
+    function onLightPointerUp(e) {
+        if (isBrightnessCycling) { stopBrightnessCycle(); return; }
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        var dx = e.clientX - ptrDownPos.x;
+        var dy = e.clientY - ptrDownPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) < CLICK_DIST && (performance.now() - ptrDownTime) < CLICK_MS) {
+            getLightMouse(e);
+            lightRaycaster.setFromCamera(lightMouse, camera);
+            var cp = scene.getObjectByName('clickPlane');
+            if (cp) {
+                var hits = lightRaycaster.intersectObject(cp);
+                if (hits.length > 0) placeLightAt(hits[0].point);
+            }
+        }
+    }
+
+    // ===== 动画循环 =====
+    function startAnimationLoop() {
+        var lastTime = performance.now();
+        function animate(currentTime) {
+            animationId = requestAnimationFrame(animate);
+            var delta = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            if (model) {
+                model.rotation.y += delta * 0.18;
+            }
+            updateBrightnessCycle(currentTime);
+            if (controls && controls.enableDamping) {
+                controls.update();
+            }
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+        animate(performance.now());
+    }
+
+    // ===== 销毁 Three.js 资源 =====
+    function disposeThreeJS() {
+        // 取消动画循环
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+        
+        // 移除并清理模型
+        if (model) {
+            scene.remove(model);
+            model.traverse(function(obj) {
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) {
+                    if (Array.isArray(obj.material)) {
+                        obj.material.forEach(m => m.dispose());
+                    } else {
+                        obj.material.dispose();
+                    }
+                }
+            });
+            model = null;
+        }
+
+        // 清理用户灯光
+        removeUserLight();
+        stopBrightnessCycle();
+
+        // 清理渲染器
+        if (renderer) {
+            renderer.dispose();
+            renderer = null;
+        }
+        
+        // 清理控制器
+        if (controls) {
+            controls.dispose();
+            controls = null;
+        }
+        
+        // 清理场景和相机
+        scene = null;
+        camera = null;
+        
+        // 重置当前模型URL
+        currentModelUrl = null;
+    }
+
+    // ===== 窗口大小调整 =====
+    function handleResize() {
+        if (!camera || !renderer) return;
+        
+        var width = viewerStage.clientWidth;
+        var height = viewerStage.clientHeight;
+        
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        
+        renderer.setSize(width, height);
+    }
+
+    // ===== 打开查看器 =====
+    function openViewer(title, modelUrl, desc, coverUrl) {
+        // 更新UI
+        viewerTitle.textContent = title;
+        if (infoTitle) infoTitle.textContent = title;
+        if (infoDesc) infoDesc.textContent = desc || '';
+        if (infoImg) infoImg.src = coverUrl || '';
+        
+        // 显示遮罩层
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // 延迟一帧后初始化（确保DOM已更新）
+        requestAnimationFrame(function() {
+            // 初始化Three.js
+            initThreeJS();
+            
+            // 加载模型
+            loadModel(modelUrl);
+            
+            // 灯光交互
+            viewerCanvas.addEventListener('pointerdown', onLightPointerDown);
+            viewerCanvas.addEventListener('pointermove', onLightPointerMove);
+            viewerCanvas.addEventListener('pointerup', onLightPointerUp);
+
+            // 添加窗口大小监听
+            window.addEventListener('resize', handleResize);
+        });
+    }
+
+    // ===== 关闭查看器 =====
+    function closeViewer() {
+        // 隐藏遮罩层
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        
+        // 移除灯光交互
+        viewerCanvas.removeEventListener('pointerdown', onLightPointerDown);
+        viewerCanvas.removeEventListener('pointermove', onLightPointerMove);
+        viewerCanvas.removeEventListener('pointerup', onLightPointerUp);
+
+        // 移除窗口大小监听
+        window.removeEventListener('resize', handleResize);
+        
+        // 延迟销毁（等待过渡动画完成）
+        setTimeout(function() {
+            disposeThreeJS();
+        }, 300);
+    }
+
+    // ===== 事件绑定 =====
+    
+    // 卡片点击事件
+    document.querySelectorAll('.exhibition-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+            var title = this.dataset.title;
+            var desc = this.dataset.desc;
+            var coverUrl = this.dataset.cover;
+            var modelUrl = this.dataset.modelUrl;
+            openViewer(title, modelUrl, desc, coverUrl);
+        });
+    });
+    
+    // 关闭按钮点击事件
+    closeBtn.addEventListener('click', closeViewer);
+    
+    // ESC键关闭
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && overlay.classList.contains('active')) {
+            closeViewer();
+        }
+    });
+
+    // 阻止canvas上的右键菜单
+    viewerCanvas.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+
+})();
+</script>
+{% endblock %}

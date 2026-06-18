@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    修改头像
+{% endblock %}
+
+{% block nav_title %}
+    修改头像
+{% endblock %}
+
+{% block content %}
+    <div class="upload-card">
+        <h2>修改头像</h2>
+        <form action="" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="avatar-compare">
+                <div class="avatar-slot">
+                    <label>当前头像</label>
+                    <img src="/media/{{ user_obj.avatar }}" alt="当前头像">
+                </div>
+                <span class="glyphicon glyphicon-arrow-right" style="font-size:22px;color:var(--text-muted)"></span>
+                <div class="avatar-slot upload-target">
+                    <label for="avatar">点击上传新头像</label>
+                    <img src="/media/{{ user_obj.avatar }}" alt="新头像" id="my_img">
+                </div>
+            </div>
+            <input type="file" id="avatar" name="avatar" style="display:none">
+            <div style="text-align:center">
+                <button type="submit" class="btn btn-primary">保存修改</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+
+{% block js %}
+    <script>
+        // 点击新头像区域(图片或文字)都能唤起文件选择
+        $(".avatar-slot.upload-target").click(function (e) {
+            // 内部的 <label for="avatar"> 已经有原生行为,避免触发两次
+            if (e.target.tagName === 'LABEL') return
+            $("#avatar").trigger('click')
+        })
+
+        $("#avatar").change(function () {
+            var file_obj = $("#avatar")[0].files[0]
+            if (!file_obj) return
+            var file_read = new FileReader()
+            file_read.readAsDataURL(file_obj)
+            file_read.onload = function () {
+                $("#my_img").attr("src", file_read.result)
+            }
+        })
+    </script>
+{% endblock %}

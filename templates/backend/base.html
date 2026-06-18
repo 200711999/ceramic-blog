@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    雅集后台
+{% endblock %}
+
+{% block nav_title %}
+    后台
+{% endblock %}
+
+{% block left %}
+    <div class="panel backend-nav">
+        <div class="panel-heading">
+            <h3 class="panel-title">管理功能</h3>
+        </div>
+        <div class="panel-body">
+            <p><a href="/article/add/">撰写文章</a></p>
+            <p><a href="/category/add/">新建分类</a></p>
+            <p><a href="/tag/add/">新建标签</a></p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#article" aria-controls="article" role="tab" data-toggle="tab">文章</a></li>
+        <li role="presentation"><a href="#category" aria-controls="category" role="tab" data-toggle="tab">分类</a></li>
+        <li role="presentation"><a href="#tag" aria-controls="tag" role="tab" data-toggle="tab">标签</a></li>
+        <li role="presentation"><a href="#comment" aria-controls="comment" role="tab" data-toggle="tab">评论</a></li>
+        <li role="presentation"><a href="#info" aria-controls="info" role="tab" data-toggle="tab">完善信息</a></li>
+    </ul>
+
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="article">
+            {% block article %}{% endblock %}
+        </div>
+        <div role="tabpanel" class="tab-pane" id="category">
+            {% block category %}{% endblock %}
+        </div>
+        <div role="tabpanel" class="tab-pane" id="tag">
+            {% block tag %}{% endblock %}
+        </div>
+        <div role="tabpanel" class="tab-pane" id="comment">
+            {% block comment %}{% endblock %}
+        </div>
+        <div role="tabpanel" class="tab-pane" id="info">
+            {% block userinfo %}{% endblock %}
+        </div>
+    </div>
+{% endblock %}

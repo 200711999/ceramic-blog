@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评论编辑器</title>
+    <link href="https://unpkg.com/@wangeditor/editor@5.1.23/dist/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://unpkg.com/@wangeditor/editor@5.1.23/dist/index.js"></script>
+    <style>
+        /* ========== Reset & Base ========== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #1d2129;
+            background: #f5f6f7;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { text-decoration: none; color: inherit; }
+        ul, li { list-style: none; }
+
+        /* ========== Layout ========== */
+        .page-wrapper {
+            max-width: 820px;
+            margin: 0 auto;
+            padding: 40px 16px 80px;
+        }
+
+        /* ========== Card ========== */
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            padding: 24px;
+            margin-bottom: 16px;
+            transition: box-shadow 0.2s ease;
+        }
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d2129;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 18px;
+            background: #2f6feb;
+            border-radius: 2px;
+        }
+
+        /* ========== User Card ========== */
+        .user-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .user-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .user-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #f0f0f0;
+            flex-shrink: 0;
+        }
+        .user-info .name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d2129;
+            margin-bottom: 4px;
+        }
+        .user-info .meta {
+            font-size: 12px;
+            color: #8a919f;
+        }
+        .user-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .follow-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: 80px;
+            height: 36px;
+            background: #ff4d4f;
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 2px 8px rgba(255, 77, 79, 0.25);
+            flex-shrink: 0;
+        }
+        .follow-btn:hover {
+            background: #ff7875;
+            transform: translateY(-1px) scale(1.04);
+            box-shadow: 0 4px 14px rgba(255, 77, 79, 0.35);
+        }
+        .follow-btn:active {
+            transform: translateY(0) scale(1);
+        }
+        .follow-btn .icon-plus {
+            font-size: 14px;
+            font-weight: 300;
+        }
+        .more-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .more-btn:hover {
+            transform: translateY(-2px) rotate(90deg);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .more-btn:active {
+            transform: translateY(0) rotate(0deg);
+        }
+
+        /* ========== Editor Card ========== */
+        .editor-wrapper {
+            border: 1px solid #e5e6eb;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fafbfc;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .editor-wrapper:focus-within {
+            border-color: #2f6feb;
+            box-shadow: 0 0 0 3px rgba(47, 111, 235, 0.08);
+        }
+        .editor-wrapper .w-e-toolbar {
+            border-bottom: 1px solid #e5e6eb !important;
+            background: #fafbfc !important;
+        }
+        .editor-wrapper .w-e-bar-item button {
+            color: #4e5969 !important;
+            transition: all 0.18s ease;
+            border-radius: 6px !important;
+        }
+        .editor-wrapper .w-e-bar-item button:hover {
+            background: #e8f0fe !important;
+            color: #2f6feb !important;
+        }
+        .editor-wrapper .w-e-text-container {
+            background: #ffffff !important;
+            min-height: 220px !important;
+        }
+        .editor-wrapper .w-e-bar-divider {
+            background: #e5e6eb !important;
+        }
+        .editor-wrapper .w-e-text-placeholder {
+            color: #c9cdd4 !important;
+            font-size: 14px;
+        }
+
+        /* ========== AI Tools ========== */
+        .ai-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+        .ai-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            background: transparent;
+            border: 1px solid #e5e6eb;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #4e5969;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .ai-btn:hover {
+            background: #f5f6f7;
+            border-color: #c9cdd4;
+            color: #1d2129;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .ai-btn svg {
+            width: 14px;
+            height: 14px;
+            opacity: 0.7;
+        }
+        .ai-btn:hover svg {
+            opacity: 1;
+        }
+
+        /* ========== Submit Area ========== */
+        .submit-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .submit-hint {
+            font-size: 12px;
+            color: #c9cdd4;
+        }
+        .submit-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 28px;
+            background: #faad14;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 14px rgba(250, 173, 20, 0.3);
+        }
+        .submit-btn:hover {
+            background: #ffc53d;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(250, 173, 20, 0.4);
+        }
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        .submit-btn .icon-send {
+            font-size: 13px;
+        }
+
+        /* ========== Toast ========== */
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 2000;
+            background: #fff;
+            color: #1d2129;
+            border: 1px solid #e5e6eb;
+            border-left: 3px solid #2f6feb;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            padding: 12px 18px;
+            min-width: 220px;
+            font-size: 13px;
+            animation: toastIn 0.25s ease;
+        }
+        .toast.toast--error { border-left-color: #ff4d4f; }
+        .toast.toast--success { border-left-color: #52c41a; }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ========== Responsive ========== */
+        @media (max-width: 640px) {
+            .page-wrapper { padding: 20px 12px 60px; }
+            .card { padding: 16px; }
+            .user-avatar { width: 44px; height: 44px; }
+            .editor-wrapper .w-e-text-container { min-height: 160px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+    <!-- 用户信息卡片 -->
+    <div class="card">
+        <div class="card-title">评论者</div>
+        <div class="user-bar">
+            <div class="user-left">
+                <img class="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="头像">
+                <div class="user-info">
+                    <div class="name">前端小王</div>
+                    <div class="meta">注册于 2024年3月 · 已发表 128 条评论</div>
+                </div>
+            </div>
+            <div class="user-right">
+                <button class="follow-btn" id="followBtn">
+                    <span class="icon-plus">+</span>
+                    <span>关注</span>
+                </button>
+                <button class="more-btn" id="moreBtn" title="更多操作">+</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑器卡片 -->
+    <div class="card">
+        <div class="card-title">发表评论</div>
+
+        <div class="editor-wrapper">
+            <div id="toolbar-container"></div>
+            <div id="editor-container"></div>
+        </div>
+
+        <!-- AI 工具栏 -->
+        <div class="ai-bar">
+            <button class="ai-btn" id="aiPolish" title="AI 润色">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>AI 润色</span>
+            </button>
+            <button class="ai-btn" id="aiSummarize" title="AI 总结">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                <span>AI 总结</span>
+            </button>
+            <button class="ai-btn" id="aiContinue" title="AI 续写">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+                <span>AI 续写</span>
+            </button>
+        </div>
+
+        <!-- 发布按钮栏 -->
+        <div class="submit-bar">
+            <span class="submit-hint">支持 Markdown 语法 · 文明发言</span>
+            <button class="submit-btn" id="submitComment">
+                <span class="icon-send">&#10148;</span>
+                <span>发表评论</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 评论列表示例 -->
+    <div class="card">
+        <div class="card-title">精彩评论</div>
+        <div id="commentList" style="color:#8a919f;font-size:13px;text-align:center;padding:20px 0;">
+            暂无评论，快来抢沙发吧～
+        </div>
+    </div>
+
+</div>
+
+<script>
+    /* ========== Toast Helper ========== */
+    function showToast(msg, type) {
+        var $existing = $('.toast');
+        if ($existing.length) $existing.remove();
+        var cls = type ? 'toast--' + type : '';
+        var $el = $('<div class="toast ' + cls + '">' + msg + '</div>');
+        $('body').append($el);
+        setTimeout(function () { $el.fadeOut(250, function () { $(this).remove(); }); }, 2400);
+    }
+
+    /* ========== wangEditor Init ========== */
+    var editor = null;
+    var toolbar = null;
+
+    (function initEditor() {
+        var E = window.wangEditor;
+        if (!E || !E.createEditor) {
+            console.error('wangEditor not loaded');
+            return;
+        }
+
+        var editorConfig = {
+            placeholder: '写下你的评论，分享你的见解…',
+            autoFocus: false,
+            scroll: false,
+            onChange: function (editor) {
+                // console.log('content changed:', editor.getHtml());
+            }
+        };
+
+        // 图片上传占位（演示用 base64）
+        editorConfig.MENU_CONF = {
+            uploadImage: {
+                server: '',
+                customUpload: function (file, insertFn) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        insertFn(e.target.result, file.name, e.target.result);
+                        showToast('图片已插入（演示模式）', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
+            emotion: {
+                emotions: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖','😺','😸','😹','😻','😼','😽','🙀','😿','😾']
+            }
+        };
+
+        editor = E.createEditor({
+            selector: '#editor-container',
+            html: '<p><br></p>',
+            config: editorConfig,
+            mode: 'default'
+        });
+
+        var toolbarConfig = {
+            toolbarKeys: [
+                'bold', 'italic', '|',
+                'blockquote', 'codeBlock', '|',
+                'emotion', 'insertImage', 'link', '|',
+                'undo', 'redo'
+            ]
+        };
+
+        toolbar = E.createToolbar({
+            editor: editor,
+            selector: '#toolbar-container',
+            config: toolbarConfig,
+            mode: 'default'
+        });
+    })();
+
+    /* ========== Submit Comment ========== */
+    $('#submitComment').on('click', function () {
+        if (!editor) {
+            showToast('编辑器初始化失败', 'error');
+            return;
+        }
+        var html = editor.getHtml();
+        var text = editor.getText().trim();
+        if (!text || text === '') {
+            showToast('请输入评论内容', 'error');
+            return;
+        }
+
+        var $btn = $(this);
+        var origText = $btn.html();
+        $btn.prop('disabled', true).html('<span style="display:inline-block;width:14px;height:14px;border:2px solid #fff;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;"></span>提交中…');
+
+        // 模拟 AJAX 提交（接入后端时替换为真实接口）
+        setTimeout(function () {
+            $btn.prop('disabled', false).html(origText);
+            showToast('评论发表成功', 'success');
+            editor.setHtml('<p><br></p>');
+
+            // 追加到列表演示
+            var $list = $('#commentList');
+            if ($list.text().indexOf('暂无评论') >= 0) $list.empty();
+            $list.prepend(
+                '<div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #f0f0f0;">' +
+                '<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" style="width:40px;height:40px;border-radius:50%;flex-shrink:0;">' +
+                '<div style="flex:1;">' +
+                '<div style="font-weight:600;color:#1d2129;margin-bottom:4px;">前端小王 <span style="font-weight:400;color:#c9cdd4;font-size:12px;">· 刚刚</span></div>' +
+                '<div style="color:#4e5969;line-height:1.7;word-break:break-word;">' + html + '</div>' +
+                '</div></div>'
+            );
+        }, 800);
+    });
+
+    /* ========== AI Buttons ========== */
+    $('#aiPolish').on('click', function () {
+        var text = editor.getText().trim();
+        if (!text) { showToast('请先输入内容再使用 AI 润色', 'error'); return; }
+        showToast('AI 润色中…', 'success');
+        // TODO: 接入 /ai/generate/ 接口
+        console.log('AI polish:', text);
+    });
+
+    $('#aiSummarize').on('click', function () {
+        var text = editor.getText().trim();
+        if (!text) { showToast('请先输入内容再使用 AI 总结', 'error'); return; }
+        showToast('AI 总结中…', 'success');
+        // TODO: 接入 AI 总结接口
+        console.log('AI summarize:', text);
+    });
+
+    $('#aiContinue').on('click', function () {
+        var text = editor.getText().trim();
+        if (!text) { showToast('请先输入内容再使用 AI 续写', 'error'); return; }
+        showToast('AI 续写中…', 'success');
+        // TODO: 接入 AI 续写接口
+        console.log('AI continue:', text);
+    });
+
+    /* ========== Follow Button ========== */
+    var isFollowing = false;
+    $('#followBtn').on('click', function () {
+        isFollowing = !isFollowing;
+        var $btn = $(this);
+        if (isFollowing) {
+            $btn.css({background: '#e5e6eb', color: '#4e5969', boxShadow: 'none'})
+                .html('<span>&#10003;</span><span>已关注</span>');
+            showToast('关注成功', 'success');
+        } else {
+            $btn.css({background: '', color: '', boxShadow: ''})
+                .html('<span class="icon-plus">+</span><span>关注</span>');
+            showToast('已取消关注', 'success');
+        }
+    });
+
+    /* ========== More Button ========== */
+    $('#moreBtn').on('click', function () {
+        showToast('更多功能开发中…', 'success');
+    });
+</script>
+<style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</body>
+</html>

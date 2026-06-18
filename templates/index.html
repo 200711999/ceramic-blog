@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% load my_tag %}
+
+{% block title %}
+    主页
+{% endblock %}
+
+{% block nav_title %}
+    主页
+{% endblock %}
+
+{% block left %}
+    <div class="panel">
+        <div class="panel-heading">
+            <h3 class="panel-title">名窑巡礼</h3>
+        </div>
+        <div class="panel-body">
+            汝 · 官 · 哥 · 钧 · 定 — 宋代五大名窑，各具神韵。汝窑天青、官窑粉青、哥窑金丝铁线、钧窑窑变万彩、定窑白釉刻花，皆为中华陶瓷之巅峰。
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-heading">
+            <h3 class="panel-title">青花雅韵</h3>
+        </div>
+        <div class="panel-body">
+            青花瓷以钴料绘纹，罩以透明釉，高温一次烧成。自元代成熟，明代永乐、宣德年间达到巅峰，清三代更臻化境，被誉为"瓷国明珠"。
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-heading">
+            <h3 class="panel-title">鉴赏入门</h3>
+        </div>
+        <div class="panel-body">
+            观型 · 辨釉 · 识纹 · 断代。造型看时代特征，釉色辨窑口工艺，纹饰识文化内涵，款识定年代真伪。博古通今，方得真趣。
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <form class="search-bar" method="get" action="/index/">
+        <div class="search-input">
+            <span class="glyphicon glyphicon-search"></span>
+            <input type="text" name="q" class="form-control" placeholder="搜索文章标题或标签…"
+                   value="{{ q|default:'' }}" maxlength="64">
+        </div>
+        <button type="submit" class="btn btn-primary">搜索</button>
+        {% if q %}
+            <a href="/index/" class="btn btn-default">清除</a>
+        {% endif %}
+    </form>
+
+    <div class="section-divider">
+        {% if q %}
+            <h4>搜索 "{{ q }}" — 共 {{ total }} 篇文章</h4>
+        {% else %}
+            <div class="sort-tabs">
+                <a href="/index/?sort=latest" class="sort-tab {% if sort != 'hot' %}active{% endif %}">最新</a>
+                <a href="/index/?sort=hot" class="sort-tab {% if sort == 'hot' %}active{% endif %}">最热</a>
+            </div>
+        {% endif %}
+    </div>
+    <ul class="media-list">
+        {% for article in article_queryset %}
+            <li class="media">
+                <div class="media-left">
+                    <a href="/index/{{ article.blog.user.username }}/">
+                        <img class="media-object" src="/media/{{ article.blog.user.avatar }}" alt="头像">
+                    </a>
+                </div>
+                <div class="media-body">
+                    <h4 class="media-heading">
+                        <a href="/index/{{ article.blog.user.username }}/p/{{ article.pk }}">{{ article.title }}</a>
+                    </h4>
+                    <p>{{ article.content|get_desc }}</p>
+                    <div class="meta">
+                        <span>作者
+                            <a href="/index/{{ article.blog.user.username }}/">{{ article.blog.user.username }}</a>
+                        </span>
+                        <span>{{ article.create_time|date:'Y-m-d H:i' }}</span>
+                        <span><span class="glyphicon glyphicon-thumbs-up"></span> {{ article.up_num }}</span>
+                        <span><span class="glyphicon glyphicon-comment"></span> {{ article.comment_num }}</span>
+                    </div>
+                </div>
+            </li>
+        {% empty %}
+            <li class="media" style="justify-content:center;color:var(--text-muted);padding:40px">
+                {% if q %}
+                    没有找到与 "{{ q }}" 匹配的文章
+                {% else %}
+                    还没有文章 — 成为第一个发布者吧
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <nav class="pager-nav" aria-label="文章分页">
+            <ul class="pager-list">
+                {% if page_obj.has_previous %}
+                    <li class="pager-item">
+                        <a href="?{{ query_params }}&page={{ page_obj.previous_page_number }}" rel="prev">
+                            <span class="glyphicon glyphicon-chevron-left"></span> 上一页
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="pager-item disabled"><span><span class="glyphicon glyphicon-chevron-left"></span> 上一页</span></li>
+                {% endif %}
+
+                {% if show_first %}
+                    <li class="pager-item"><a href="?{{ query_params }}&page=1">1</a></li>
+                    {% if show_first_ellipsis %}
+                        <li class="pager-item ellipsis"><span>…</span></li>
+                    {% endif %}
+                {% endif %}
+
+                {% for p in page_range %}
+                    {% if p == page_obj.number %}
+                        <li class="pager-item active"><span>{{ p }}</span></li>
+                    {% else %}
+                        <li class="pager-item"><a href="?{{ query_params }}&page={{ p }}">{{ p }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if show_last %}
+                    {% if show_last_ellipsis %}
+                        <li class="pager-item ellipsis"><span>…</span></li>
+                    {% endif %}
+                    <li class="pager-item"><a href="?{{ query_params }}&page={{ page_obj.paginator.num_pages }}">{{ page_obj.paginator.num_pages }}</a></li>
+                {% endif %}
+
+                {% if page_obj.has_next %}
+                    <li class="pager-item">
+                        <a href="?{{ query_params }}&page={{ page_obj.next_page_number }}" rel="next">
+                            下一页 <span class="glyphicon glyphicon-chevron-right"></span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="pager-item disabled"><span>下一页 <span class="glyphicon glyphicon-chevron-right"></span></span></li>
+                {% endif %}
+            </ul>
+            <div class="pager-info">
+                第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页 · 共 {{ total }} 篇
+            </div>
+        </nav>
+    {% endif %}
+{% endblock %}
+
+{% block right %}
+    <div class="panel" id="announcement-panel">
+        <div class="panel-heading">
+            <h3 class="panel-title">社区公告</h3>
+        </div>
+        <div class="panel-body" id="announcement-list">
+            <p style="color:var(--text-muted);font-size:13px;text-align:center">加载中…</p>
+        </div>
+    </div>
+    {% if user.is_authenticated and followed_articles %}
+        <div class="panel followed-panel">
+            <div class="panel-heading">
+                <h3 class="panel-title">关注动态</h3>
+            </div>
+            <div class="panel-body">
+                {% for fa in followed_articles %}
+                    <div class="followed-article">
+                        <a href="/index/{{ fa.blog.user.username }}/p/{{ fa.pk }}/">{{ fa.title }}</a>
+                        <span class="fa-meta">{{ fa.blog.user.username }} · {{ fa.create_time|date:'m-d H:i' }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block js %}
+    <script>
+        // 加载右侧公告列表
+        $.get('/announcement/list/', function (res) {
+            var $list = $('#announcement-list');
+            if (!res.announcements || !res.announcements.length) {
+                $list.html('<p style="color:var(--text-muted);font-size:13px;text-align:center">暂无公告</p>');
+                return;
+            }
+            var html = '';
+            res.announcements.forEach(function (a, i) {
+                html += '<div class="sidebar-announcement' + (i === 0 ? ' sidebar-announcement--latest' : '') + '">' +
+                    '<div class="sidebar-announcement-title">' + a.title + '</div>' +
+                    '<div class="sidebar-announcement-body">' + a.content + '</div>' +
+                    '<div class="sidebar-announcement-time">' + a.create_time + '</div>' +
+                    '</div>';
+            });
+            $list.html(html);
+        });
+    </script>
+{% endblock %}

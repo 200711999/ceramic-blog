@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    AI 问答助手
+{% endblock %}
+
+{% block nav_title %}
+    AI 问答
+{% endblock %}
+
+{% block content %}
+    <div class="chat-card">
+        <div class="chat-header">
+            <span class="glyphicon glyphicon-comment"></span> AI 问答助手
+            <small class="text-muted">有问题随时问,AI 秒回</small>
+            <button type="button" class="btn btn-link btn-sm pull-right" id="clear-chat">清空对话</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-msg chat-msg--ai">
+                <div class="chat-bubble">
+                    你好!我是论坛 AI 助手,可以帮你解答技术问题、生活问题,有什么想问的吗?
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <div class="input-group">
+                <input type="text" class="form-control" id="chat-input" placeholder="输入问题,按 Enter 发送…" maxlength="500">
+                <span class="input-group-btn">
+                    <button class="btn btn-primary" type="button" id="chat-send">
+                        <span class="glyphicon glyphicon-send"></span> 发送
+                    </button>
+                </span>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        (function () {
+            var $messages = $("#chat-messages");
+            var $input = $("#chat-input");
+            var $send = $("#chat-send");
+
+            function scrollToBottom() {
+                $messages.scrollTop($messages[0].scrollHeight);
+            }
+
+            function appendMsg(text, isUser) {
+                var cls = isUser ? 'chat-msg--user' : 'chat-msg--ai';
+                var html = '<div class="chat-msg ' + cls + '"><div class="chat-bubble">' + escapeHtml(text) + '</div></div>';
+                $messages.append(html);
+                scrollToBottom();
+            }
+
+            function appendLoading() {
+                var html = '<div class="chat-msg chat-msg--ai" id="chat-loading"><div class="chat-bubble"><span class="dot-pulse"></span> 思考中…</div></div>';
+                $messages.append(html);
+                scrollToBottom();
+            }
+
+            function removeLoading() {
+                $("#chat-loading").remove();
+            }
+
+            function escapeHtml(text) {
+                return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
+
+            function sendMessage() {
+                var text = $input.val().trim();
+                if (!text) return;
+
+                appendMsg(text, true);
+                $input.val('');
+                appendLoading();
+                window.setBtnLoading($send, true, '发送中…');
+
+                $.ajax({
+                    url: '/ai_chat/',
+                    type: 'post',
+                    data: {
+                        question: text,
+                        csrfmiddlewaretoken: "{{ csrf_token }}"
+                    },
+                    success: function (res) {
+                        removeLoading();
+                        window.setBtnLoading($send, false);
+                        if (res.code === 200) {
+                            appendMsg(res.answer, false);
+                        } else {
+                            appendMsg('抱歉,' + (res.msg || '出错了'), false);
+                        }
+                    },
+                    error: function () {
+                        removeLoading();
+                        window.setBtnLoading($send, false);
+                        appendMsg('网络请求失败,请检查 API 配置或网络', false);
+                    }
+                });
+            }
+
+            $send.on("click", sendMessage);
+            $input.on("keydown", function (e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            $("#clear-chat").on("click", function () {
+                $messages.html(
+                    '<div class="chat-msg chat-msg--ai"><div class="chat-bubble">对话已清空,有什么想问的吗?</div></div>'
+                );
+                $.ajax({
+                    url: '/ai_chat/',
+                    type: 'post',
+                    data: { question: '__clear__', csrfmiddlewaretoken: "{{ csrf_token }}" }
+                });
+            });
+
+            scrollToBottom();
+        })();
+    </script>
+{% endblock %}

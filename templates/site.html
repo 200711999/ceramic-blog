@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load my_tag %}
+
+{% block css %}
+    {% if blog.site_theme %}
+        <link rel="stylesheet" href="/media/{{ blog.site_theme }}">
+    {% endif %}
+{% endblock %}
+
+{% block title %}
+    {{ blog.site_title }}
+{% endblock %}
+
+{% block nav_title %}
+    {{ blog.site_title }}
+{% endblock %}
+
+
+{% block content %}
+    <ul class="media-list">
+        {% for article in article_queryset %}
+            <li class="media">
+                <div class="media-body">
+                    <h4 class="media-heading">
+                        <a href="/index/{{ username }}/p/{{ article.pk }}">{{ article.title }}</a>
+                    </h4>
+                    <p>{{ article.content|get_desc }}</p>
+                    <div class="meta">
+                        <span>分类 <span class="label label-primary">{{ article.category.name }}</span></span>
+                        <span>标签
+                            {% for tag in article.tags.all %}
+                                <span class="label">{{ tag.name }}</span>
+                            {% endfor %}
+                        </span>
+                        <span style="margin-left:auto">{{ article.create_time|date:"Y-m-d" }}</span>
+                        <span><span class="glyphicon glyphicon-thumbs-up"></span> {{ article.up_num }}</span>
+                        <span><span class="glyphicon glyphicon-comment"></span> {{ article.comment_num }}</span>
+                    </div>
+                </div>
+            </li>
+        {% empty %}
+            <li class="media" style="justify-content:center;color:var(--text-muted);padding:40px">
+                这里还没有文章
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
+
+{% block right %}
+    <div class="panel">
+        <div class="panel-heading">
+            <h3 class="panel-title">个人信息</h3>
+        </div>
+        <div class="panel-body side-info">
+            <img src="/media/{{ user_obj.avatar }}" alt="头像">
+            <p><b>用户名</b>{{ user_obj.username }}</p>
+            <p>
+                <a href="#"><b>粉丝</b><span class="follower-count">{{ follower_count }}</span></a>
+                <a href="#"><b>关注</b><span class="following-count">{{ following_count }}</span></a>
+            </p>
+            {% if not is_own and user.is_authenticated %}
+                <button class="btn btn-sm follow-btn {% if is_following %}following{% endif %}"
+                        data-user-id="{{ user_obj.pk }}" id="follow-btn">
+                    {% if is_following %}已关注{% else %}+ 关注{% endif %}
+                </button>
+            {% endif %}
+            {% if user_obj.phone %}
+                <p><b>手机号</b>{{ user_obj.phone }}</p>
+            {% endif %}
+            <p><b>加入时间</b>{{ user_obj.create_time|date:'Y-m-d' }}</p>
+            <p><b>博龄</b>{{ user_obj.create_time|blog_age }} 天</p>
+        </div>
+    </div>
+    {% if is_own %}
+        <div class="panel">
+            <div class="panel-heading">
+                <h3 class="panel-title">我关注的人</h3>
+            </div>
+            <div class="panel-body">
+                {% for fu in following_users %}
+                    <div class="follow-user-item">
+                        <a href="/index/{{ fu.username }}/">
+                            <img src="/media/{{ fu.avatar }}" alt="" class="follow-user-avatar">
+                            {{ fu.username }}
+                        </a>
+                    </div>
+                {% empty %}
+                    <div style="color:var(--text-muted);font-size:13px">还没关注任何人</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-heading">
+                <h3 class="panel-title">我赞过的文章</h3>
+            </div>
+            <div class="panel-body">
+                {% for article in liked_articles %}
+                    <div>
+                        <a href="/index/{{ article.blog.user.username }}/p/{{ article.pk }}/">{{ article.title }}</a>
+                        <span style="color:var(--text-faint);font-size:12px">— {{ article.blog.user.username }}</span>
+                    </div>
+                {% empty %}
+                    <div style="color:var(--text-muted);font-size:13px">还没赞过任何文章</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    <div class="panel">
+        <div class="panel-heading">
+            <h3 class="panel-title">藏友交流</h3>
+        </div>
+        <div class="panel-body" style="text-align:center;color:var(--text-muted);font-size:13px;line-height:1.8">
+            以瓷会友，以文传道<br>
+            欢迎分享您的藏品与心得
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        $('#follow-btn').on('click', function () {
+            var $btn = $(this);
+            var userId = $btn.data('user-id');
+            $.ajax({
+                url: '/follow/',
+                type: 'POST',
+                data: { user_id: userId, csrfmiddlewaretoken: '{{ csrf_token }}' },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $btn.toggleClass('following', res.following);
+                        $btn.text(res.following ? '已关注' : '+ 关注');
+                        $('.follower-count').text(res.follower_count);
+                    }
+                },
+            });
+        });
+    </script>
+{% endblock %}
+
+{% block left %}
+    {% sidebar username %}
+{% endblock %}

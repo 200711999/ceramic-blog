@@ -1,0 +1,934 @@
+{% extends 'base.html' %}
+{% load my_tag %}
+
+{% block css %}
+    {% if blog.site_theme %}
+        <link rel="stylesheet" href="/media/{{ blog.site_theme }}">
+    {% endif %}
+    <link href="https://cdn.jsdelivr.net/npm/@wangeditor/editor@5.1.23/dist/css/style.css" rel="stylesheet">
+    <style>
+        .comment-editor-card {
+            background: #ffffff;
+            border: 1px solid #e8e8e8;
+            border-radius: 16px;
+            padding: 28px 32px;
+            margin: 28px 0;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+        .comment-editor-card:hover {
+            box-shadow: 0 6px 32px rgba(0, 0, 0, 0.08);
+        }
+        .editor-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d2a26;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #e8e4dc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .editor-header::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, #1a3a5c 0%, #5a8a6a 100%);
+            border-radius: 2px;
+        }
+        .editor-wrapper {
+            border: 1.5px solid #ddd5c8;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+            transition: all 0.2s ease;
+        }
+        .editor-wrapper:focus-within {
+            border-color: #1a3a5c;
+            box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.08);
+        }
+        .editor-wrapper .w-e-toolbar {
+            background: #f5f2ec !important;
+            border-bottom: 1px solid #e8e4dc !important;
+            padding: 8px 12px !important;
+        }
+        .editor-wrapper .w-e-bar-item button {
+            border-radius: 6px !important;
+            transition: all 0.15s ease;
+        }
+        .editor-wrapper .w-e-bar-item button:hover {
+            background: #e8eef5 !important;
+            color: #1a3a5c !important;
+        }
+        .editor-wrapper .w-e-text-container {
+            background: #fff !important;
+        }
+        .editor-wrapper .w-e-text-container img {
+            max-width: 100%;
+            height: auto;
+        }
+        .editor-wrapper .w-e-text-placeholder {
+            color: #c0c0c0 !important;
+            font-size: 14px;
+        }
+        .ai-action-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+        .ai-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #fff;
+            border: 1.5px solid #e8e8e8;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #595959;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            user-select: none;
+        }
+        .ai-action-btn:hover {
+            background: #f9f9f9;
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+        .ai-action-btn:active {
+            transform: translateY(0);
+        }
+        .ai-action-btn .ai-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+        .ai-action-btn:hover .ai-icon {
+            opacity: 1;
+        }
+        .ai-action-btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        #ai-summarize-panel {
+            margin-top: 14px;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+            border: 1px solid #e8e8e8;
+            border-radius: 12px;
+            animation: slideDown 0.25s ease;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #ai-summarize-panel .ai-summary-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #ai-summarize-text {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #262626;
+            margin-bottom: 14px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .editor-submit-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .btn-submit-yellow {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #faad14 0%, #f5a623 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 14px rgba(250, 173, 20, 0.35);
+        }
+        .btn-submit-yellow:hover {
+            background: linear-gradient(135deg, #ffc53d 0%, #faad14 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(250, 173, 20, 0.45);
+        }
+        .btn-submit-yellow:active {
+            transform: translateY(0);
+        }
+        .report-form {
+            margin-top: 14px;
+            padding: 14px 16px;
+            background: #fdf6f0;
+            border: 1px solid #f0d9c0;
+            border-radius: 10px;
+        }
+        .report-form textarea {
+            width: 100%;
+            border: 1px solid #e0d0bb;
+            border-radius: 8px;
+            padding: 10px 12px;
+            resize: vertical;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .report-form textarea:focus {
+            border-color: #c9956b;
+        }
+        .report-form-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .report-msg {
+            font-size: 13px;
+            margin-left: 8px;
+        }
+    </style>
+{% endblock %}
+
+{% block title %}
+    {{ article_obj.title }}
+{% endblock %}
+
+{% block nav_title %}
+    {{ blog.site_title }}
+{% endblock %}
+
+
+{% block left %}
+    {% sidebar username %}
+{% endblock %}
+
+
+{% block content %}
+    <!-- 文章头 -->
+    <div class="article-header">
+        <h1>{{ article_obj.title }}</h1>
+        <div class="article-meta">
+            <span>分类 <span class="label label-primary">{{ article_obj.category.name }}</span></span>
+            <span>标签
+                {% for tag in article_obj.tags.all %}
+                    <span class="label">{{ tag.name }}</span>
+                {% endfor %}
+            </span>
+            <span style="margin-left:auto">{{ article_obj.create_time|date:'Y-m-d H:i' }}</span>
+            {% if article_obj.blog.user == request.user %}
+                <a class="btn btn-default btn-sm" href="/article/edit/{{ article_obj.pk }}/">编辑</a>
+            {% elif user.is_authenticated %}
+                <a class="btn btn-default btn-sm" id="report-btn" href="javascript:void(0)">举报</a>
+            {% endif %}
+        </div>
+        <div class="report-form" id="report-form" style="display:none;">
+            <textarea id="report-reason" rows="3" placeholder="请简要说明举报原因…" maxlength="256"></textarea>
+            <div class="report-form-actions">
+                <button class="btn btn-primary btn-sm" id="report-submit">提交举报</button>
+                <button class="btn btn-default btn-sm" id="report-cancel">取消</button>
+            </div>
+            <span class="report-msg" id="report-msg"></span>
+        </div>
+    </div>
+
+    <!-- 文章正文 -->
+    <div class="article-prose">
+        {{ article_obj.content|rich_content }}
+    </div>
+
+    <!-- 点赞点踩 -->
+    <div class="digg-box">
+        <div class="digg-btn upup action">
+            <span class="glyphicon glyphicon-thumbs-up"></span>
+            <span id="upup_count">{{ article_obj.up_num }}</span>
+        </div>
+        <div class="digg-btn downdown action">
+            <span class="glyphicon glyphicon-thumbs-down"></span>
+            <span id="downdown_count">{{ article_obj.down_num }}</span>
+        </div>
+        <span class="digg-tip" id="digg_tips"></span>
+    </div>
+
+    <!-- 发表评论 -->
+    <div class="comment-editor-card">
+        <div class="editor-header">发表评论</div>
+        <div class="editor-wrapper" id="comment-editor-wrapper">
+            <div id="comment-toolbar"></div>
+            <div id="comment-editor"></div>
+        </div>
+
+        <!-- AI 工具栏 -->
+        <div class="ai-action-bar">
+            <button class="ai-action-btn" id="ai-polish-btn" title="AI 润色">
+                <svg class="ai-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>AI 润色</span>
+            </button>
+            <button class="ai-action-btn" id="ai-summarize-btn" title="AI 总结">
+                <svg class="ai-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                <span>AI 总结</span>
+            </button>
+            <button class="ai-action-btn" id="ai-continue-btn" title="AI 续写">
+                <svg class="ai-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+                <span>AI 续写</span>
+            </button>
+        </div>
+
+        <!-- AI 总结结果面板 -->
+        <div id="ai-summarize-panel" style="display:none; margin-top:12px; padding:12px 16px; background:#fafbfc; border:1px solid #e5e7eb; border-radius:10px;">
+            <div style="font-weight:600; font-size:12px; color:#2f6feb; margin-bottom:6px;">AI 总结</div>
+            <div id="ai-summarize-text" style="font-size:13px; line-height:1.6; color:#1f2328; margin-bottom:10px; white-space:pre-wrap;"></div>
+            <div style="display:flex; gap:8px;">
+                <button type="button" class="btn btn-xs btn-primary" id="ai-summarize-insert">插入评论</button>
+                <button type="button" class="btn btn-xs btn-default" id="ai-summarize-close">关闭</button>
+            </div>
+        </div>
+
+        <!-- 发布按钮栏 -->
+        <div class="editor-submit-bar">
+            <button id="comment_btn" class="btn-submit-yellow">
+                <span class="glyphicon glyphicon-send" style="font-size:12px"></span>
+                <span>发表评论</span>
+            </button>
+            <span class="editor-submit-hint">支持富文本 · 文明发言</span>
+        </div>
+    </div>
+
+    <!-- 评论列表 -->
+    <div class="comment-card">
+        <div class="comment-list-header">
+            <span class="comment-count">评论 <span id="comment_num">{{ article_obj.comment_num }}</span></span>
+        </div>
+        <ul class="comment-list" id="comment-list">
+            {% for comment, replies in comments_with_replies %}
+                <li class="comment-item" data-comment-id="{{ comment.pk }}" {% if comment.user == request.user %}data-is-own="true"{% endif %}>
+                    <div class="avatar-wrap">
+                        <img class="avatar" src="/media/{{ comment.user.avatar }}" alt="头像">
+                        <div class="user-card">
+                            <img src="/media/{{ comment.user.avatar }}" alt="">
+                            <div class="uname">{{ comment.user.username }}</div>
+                            <a href="/index/{{ comment.user.username }}/" target="_blank">查看主页</a>
+                        </div>
+                    </div>
+                    <div class="body">
+                        <div class="head">
+                            <div>
+                                <span class="author">{{ comment.user.username }}</span>
+                                <span style="margin-left:8px;color:var(--text-faint)">{{ comment.create_time|friendly_time }}</span>
+                            </div>
+                            <div>
+                                <span class="comment-like" data-comment-id="{{ comment.pk }}">
+                                    <span class="glyphicon glyphicon-thumbs-up"></span>
+                                    <span class="like-count">{{ comment.up_num }}</span>
+                                </span>
+                                <a href="#" class="reply" data-parent-id="{{ comment.pk }}" data-username="{{ comment.user.username }}">回复</a>
+                            </div>
+                        </div>
+                        <div class="content">{{ comment.content|rich_content }}</div>
+                        {% if replies %}
+                            <div class="reply-toggle-bar" data-reply-count="{{ replies|length }}">
+                                <span class="reply-toggle-text">展开 {{ replies|length }} 条回复</span>
+                                <span class="glyphicon glyphicon-chevron-down"></span>
+                            </div>
+                            <div class="comment-replies-wrap" style="display:none;">
+                                <ul class="comment-replies">
+                                    {% for reply in replies %}
+                                        <li class="comment-item" data-comment-id="{{ reply.pk }}" {% if reply.user == request.user %}data-is-own="true"{% endif %}>
+                                            <div class="avatar-wrap">
+                                                <img class="avatar" src="/media/{{ reply.user.avatar }}" alt="头像">
+                                                <div class="user-card">
+                                                    <img src="/media/{{ reply.user.avatar }}" alt="">
+                                                    <div class="uname">{{ reply.user.username }}</div>
+                                                    <a href="/index/{{ reply.user.username }}/" target="_blank">查看主页</a>
+                                                </div>
+                                            </div>
+                                            <div class="body">
+                                                <div class="head">
+                                                    <div>
+                                                        <span class="author">{{ reply.user.username }}</span>
+                                                        <span style="margin-left:8px;color:var(--text-faint)">{{ reply.create_time|friendly_time }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span class="comment-like" data-comment-id="{{ reply.pk }}">
+                                                            <span class="glyphicon glyphicon-thumbs-up"></span>
+                                                            <span class="like-count">{{ reply.up_num }}</span>
+                                                        </span>
+                                                        <a href="#" class="reply" data-parent-id="{{ reply.pk }}" data-username="{{ reply.user.username }}">回复</a>
+                                                    </div>
+                                                </div>
+                                                <div class="content">{{ reply.content|rich_content }}</div>
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                </li>
+            {% empty %}
+                <li class="comment-item" style="color:var(--text-muted);justify-content:center">
+                    暂无评论 — 来抢沙发吧
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div class="context-menu" id="context-menu" style="display:none;">
+        <div class="context-menu-item" id="ctx-delete">
+            <span class="glyphicon glyphicon-trash"></span> 删除评论
+        </div>
+    </div>
+
+{% endblock %}
+
+
+{% block right %}
+    <div class="panel">
+        <div class="panel-heading">
+            <h3 class="panel-title">关于作者</h3>
+        </div>
+        <div class="panel-body side-info">
+            <a href="/index/{{ user_obj.username }}/">
+                <img src="/media/{{ user_obj.avatar }}" alt="头像">
+            </a>
+            <p><b>用户名</b>{{ user_obj.username }}</p>
+            <p>
+                <a href="#"><b>粉丝</b><span class="author-follower-count">{{ author_follower_count }}</span></a>
+                <a href="#"><b>关注</b><span>{{ author_following_count }}</span></a>
+            </p>
+            <p><b>文章</b>{{ author_article_count }} 篇</p>
+            {% if not is_own and user.is_authenticated %}
+                <button class="btn btn-sm follow-btn {% if is_following_author %}following{% endif %}"
+                        data-user-id="{{ user_obj.pk }}" id="author-follow-btn">
+                    {% if is_following_author %}已关注{% else %}+ 关注{% endif %}
+                </button>
+            {% endif %}
+            <p style="margin-top:8px">
+                <a href="/index/{{ user_obj.username }}/" class="btn btn-default btn-xs btn-block">访问主页</a>
+            </p>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-heading">
+            <h3 class="panel-title">藏友交流</h3>
+        </div>
+        <div class="panel-body" style="text-align:center;color:var(--text-muted);font-size:13px;line-height:1.8">
+            以瓷会友，以文传道<br>
+            欢迎分享您的藏品与心得
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block js %}
+    <script src="https://cdn.jsdelivr.net/npm/@wangeditor/editor@5.1.23/dist/index.js"></script>
+    <script>
+        var currentUser = "{{ request.user.username }}";
+
+        // wangEditor init for main comment
+        var commentEditor = null;
+        (function initCommentEditor() {
+            var E = window.wangEditor;
+            if (!E || !E.createEditor) {
+                console.error('wangEditor not loaded');
+                return;
+            }
+            var editorConfig = {
+                placeholder: '写下你的看法…',
+                autoFocus: false,
+                scroll: false,
+                MENU_CONF: {
+                    uploadImage: {
+                        server: '',
+                        customUpload: function (file, insertFn) {
+                            var reader = new FileReader();
+                            reader.onload = function (e) {
+                                insertFn(e.target.result, file.name, e.target.result);
+                                window.showToast('图片已插入', 'success');
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    },
+                    emotion: {
+                        emotions: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖','😺','😸','😹','😻','😼','😽','🙀','😿','😾']
+                    }
+                }
+            };
+            commentEditor = E.createEditor({
+                selector: '#comment-editor',
+                html: '<p><br></p>',
+                config: editorConfig,
+                mode: 'default'
+            });
+            E.createToolbar({
+                editor: commentEditor,
+                selector: '#comment-toolbar',
+                config: {
+                    toolbarKeys: [
+                        'bold', 'italic', '|',
+                        'blockquote', 'codeBlock', '|',
+                        'emotion', 'uploadImage', 'insertLink', '|',
+                        'undo', 'redo'
+                    ]
+                },
+                mode: 'default'
+            });
+        })();
+
+        // ===== Emoji 插入（仅内联回复框）=====
+        $(document).on('click', '.emoji-btns button', function () {
+            var emoji = $(this).data('emoji');
+            var $textarea = $(this).closest('.comment-toolbar').prev('textarea');
+            var val = $textarea.val();
+            $textarea.val(val + emoji).focus();
+        });
+
+        // ===== 展开/收起子评论 =====
+        $("#comment-list").on('click', '.reply-toggle-bar', function () {
+            var $bar = $(this);
+            var $wrap = $bar.next('.comment-replies-wrap');
+            var isOpen = $wrap.is(':visible');
+            if (isOpen) {
+                $wrap.slideUp(200);
+                $bar.find('.reply-toggle-text').text('展开 ' + $bar.data('reply-count') + ' 条回复');
+                $bar.find('.glyphicon').removeClass('glyphicon-chevron-up').addClass('glyphicon-chevron-down');
+            } else {
+                $wrap.slideDown(200);
+                $bar.find('.reply-toggle-text').text('收起回复');
+                $bar.find('.glyphicon').removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-up');
+            }
+        });
+
+        // ===== 内联回复 =====
+        $("#comment-list").on('click', '.reply', function (e) {
+            e.preventDefault();
+            var $itemBody = $(this).closest('.comment-item').find('.body');
+            $('.inline-reply').remove();
+            var parentId = $(this).data('parent-id');
+            var username = $(this).data('username');
+            var replyHtml = '<div class="inline-reply">' +
+                '<textarea rows="2" placeholder="回复 @' + username + '…" maxlength="500"></textarea>' +
+                '<div class="comment-toolbar" style="margin-top:6px;">' +
+                '<div class="emoji-btns">' +
+                '<button type="button" data-emoji="👍">👍</button>' +
+                '<button type="button" data-emoji="😂">😂</button>' +
+                '<button type="button" data-emoji="💯">💯</button>' +
+                '</div>' +
+                '</div>' +
+                '<div class="reply-actions">' +
+                '<button type="button" class="btn btn-default btn-sm cancel-reply">取消</button>' +
+                '<button type="button" class="btn btn-primary btn-sm submit-reply" data-parent-id="' + parentId + '">回复</button>' +
+                '</div></div>';
+            $itemBody.append(replyHtml);
+            $itemBody.find('.inline-reply textarea').focus();
+        });
+
+        $("#comment-list").on('click', '.cancel-reply', function () {
+            $(this).closest('.inline-reply').remove();
+        });
+
+        $("#comment-list").on('click', '.submit-reply', function () {
+            var $btn = $(this);
+            var parentId = $btn.data('parent-id');
+            var $replyBox = $btn.closest('.inline-reply');
+            var content = $replyBox.find('textarea').val().trim();
+            if (!content) {
+                window.showToast('请输入回复内容', 'error');
+                return;
+            }
+            window.setBtnLoading($btn, true, '提交中…');
+            $.ajax({
+                url: '/comment/',
+                type: 'POST',
+                data: {
+                    comment: content,
+                    article_id: {{ article_obj.id }},
+                    parent_id: parentId,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (backend) {
+                    window.setBtnLoading($btn, false);
+                    if (backend.code === 200) {
+                        $("#comment_num").text(backend.comment_num);
+                        window.showToast(backend.msg, 'success');
+                        setTimeout(function () { location.reload(); }, 400);
+                    } else {
+                        window.showToast(backend.msg, 'error');
+                    }
+                },
+                error: function () {
+                    window.setBtnLoading($btn, false);
+                    window.showToast('请求失败,请稍后再试', 'error');
+                }
+            });
+        });
+
+        // ===== 评论点赞 =====
+        $("#comment-list").on('click', '.comment-like', function () {
+            var $like = $(this);
+            var commentId = $like.data('comment-id');
+            if (!commentId) return;
+            $.ajax({
+                url: '/comment/like/',
+                type: 'POST',
+                data: {
+                    comment_id: commentId,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $like.find('.like-count').text(res.up_num);
+                        $like.toggleClass('liked', res.liked);
+                    } else {
+                        window.showToast(res.msg, 'error');
+                    }
+                },
+                error: function () {
+                    window.showToast('请求失败,请稍后再试', 'error');
+                }
+            });
+        });
+
+        // ===== 右键删除评论 =====
+        var $contextMenu = $("#context-menu");
+        var ctxCommentId = null;
+        var ctxCommentEl = null;
+
+        $("#comment-list").on('contextmenu', '.comment-item[data-is-own="true"]', function (e) {
+            e.preventDefault();
+            ctxCommentId = $(this).data('comment-id');
+            ctxCommentEl = $(this);
+            $contextMenu.css({
+                top: e.pageY + 'px',
+                left: e.pageX + 'px',
+                display: 'block'
+            });
+        });
+
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('#context-menu').length) {
+                $contextMenu.hide();
+            }
+        });
+
+        $("#ctx-delete").on('click', function () {
+            if (!ctxCommentId) return;
+            if (!confirm('确定删除这条评论吗？')) {
+                $contextMenu.hide();
+                return;
+            }
+            $.ajax({
+                url: '/comment/delete/',
+                type: 'POST',
+                data: {
+                    comment_id: ctxCommentId,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (res) {
+                    $contextMenu.hide();
+                    if (res.code === 200) {
+                        if (ctxCommentEl) {
+                            ctxCommentEl.slideUp(200, function () {
+                                $(this).remove();
+                                if ($('#comment-list .comment-item').length === 0) {
+                                    $('#comment-list').html('<li class="comment-item" style="color:var(--text-muted);justify-content:center">暂无评论 — 来抢沙发吧</li>');
+                                }
+                            });
+                        }
+                        $("#comment_num").text(res.comment_num);
+                        window.showToast(res.msg, 'success');
+                    } else {
+                        window.showToast(res.msg, 'error');
+                    }
+                    ctxCommentId = null;
+                    ctxCommentEl = null;
+                },
+                error: function () {
+                    $contextMenu.hide();
+                    window.showToast('请求失败,请稍后再试', 'error');
+                    ctxCommentId = null;
+                    ctxCommentEl = null;
+                }
+            });
+        });
+
+        // ===== AI 功能按钮 =====
+        $("#ai-polish-btn").on('click', function () {
+            if (!commentEditor) return;
+            var text = commentEditor.getText().trim();
+            if (!text) {
+                window.showToast('请先输入内容再使用 AI 润色', 'error');
+                return;
+            }
+            var $btn = $(this);
+            window.setBtnLoading($btn, true, '润色中…');
+            $.ajax({
+                url: '/ai/generate/',
+                type: 'POST',
+                data: {
+                    existing: commentEditor.getHtml(),
+                    style: '润色改写',
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (res) {
+                    window.setBtnLoading($btn, false);
+                    if (res.code === 200 && res.content) {
+                        commentEditor.setHtml(res.content);
+                        window.showToast('润色完成', 'success');
+                    } else {
+                        window.showToast(res.msg || '润色失败', 'error');
+                    }
+                },
+                error: function () {
+                    window.setBtnLoading($btn, false);
+                    window.showToast('请求失败,请稍后再试', 'error');
+                }
+            });
+        });
+
+        $("#ai-summarize-btn").on('click', function () {
+            if (!commentEditor) return;
+            var text = commentEditor.getText().trim();
+            if (!text) {
+                window.showToast('请先输入内容再使用 AI 总结', 'error');
+                return;
+            }
+            var $btn = $(this);
+            window.setBtnLoading($btn, true, '总结中…');
+            $.ajax({
+                url: '/ai/summarize/',
+                type: 'POST',
+                data: {
+                    content: commentEditor.getHtml(),
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (res) {
+                    window.setBtnLoading($btn, false);
+                    if (res.code === 200) {
+                        $("#ai-summarize-text").text(res.summary);
+                        $("#ai-summarize-panel").slideDown(200);
+                        window.showToast('总结完成', 'success');
+                    } else {
+                        window.showToast(res.msg || '总结失败', 'error');
+                    }
+                },
+                error: function () {
+                    window.setBtnLoading($btn, false);
+                    window.showToast('请求失败,请稍后再试', 'error');
+                }
+            });
+        });
+
+        $("#ai-continue-btn").on('click', function () {
+            if (!commentEditor) return;
+            var text = commentEditor.getText().trim();
+            if (!text) {
+                window.showToast('请先输入内容再使用 AI 续写', 'error');
+                return;
+            }
+            var $btn = $(this);
+            window.setBtnLoading($btn, true, '续写中…');
+            $.ajax({
+                url: '/ai/continue/',
+                type: 'POST',
+                data: {
+                    content: commentEditor.getHtml(),
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (res) {
+                    window.setBtnLoading($btn, false);
+                    if (res.code === 200) {
+                        var html = commentEditor.getHtml();
+                        var append = '<p>' + res.continuation.replace(/\n/g, '</p><p>') + '</p>';
+                        commentEditor.setHtml(html + append);
+                        window.showToast('续写完成', 'success');
+                    } else {
+                        window.showToast(res.msg || '续写失败', 'error');
+                    }
+                },
+                error: function () {
+                    window.setBtnLoading($btn, false);
+                    window.showToast('请求失败,请稍后再试', 'error');
+                }
+            });
+        });
+
+        $("#ai-summarize-close").on('click', function () {
+            $("#ai-summarize-panel").slideUp(150);
+        });
+
+        $("#ai-summarize-insert").on('click', function () {
+            var summary = $("#ai-summarize-text").text();
+            if (summary && commentEditor) {
+                commentEditor.dangerouslyInsertHtml('<blockquote><p><strong>AI 总结：</strong>' + summary.replace(/\n/g, '</p><p>') + '</p></blockquote>');
+            }
+            $("#ai-summarize-panel").slideUp(150);
+            window.showToast('已插入评论', 'success');
+        });
+
+        // ===== 发布主评论 =====
+        $("#comment_btn").click(function () {
+            var $btn = $(this);
+            if (!commentEditor) {
+                window.showToast('编辑器初始化失败', 'error');
+                return;
+            }
+            var html = commentEditor.getHtml();
+            var text = commentEditor.getText().trim();
+            if (!text) {
+                window.showToast('请输入评论内容', 'error');
+                return;
+            }
+
+            window.setBtnLoading($btn, true, '提交中…');
+
+            $.ajax({
+                url: '/comment/',
+                type: 'POST',
+                data: {
+                    comment: html,
+                    article_id: {{ article_obj.id }},
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (backend) {
+                    window.setBtnLoading($btn, false);
+                    if (backend.code === 200) {
+                        commentEditor.setHtml('<p><br></p>');
+                        $("#comment_num").text(backend.comment_num);
+                        window.showToast(backend.msg, 'success');
+                        setTimeout(function () { location.reload(); }, 600);
+                    } else {
+                        window.showToast(backend.msg, 'error');
+                    }
+                },
+                error: function () {
+                    window.setBtnLoading($btn, false);
+                    window.showToast('请求失败,请稍后再试', 'error');
+                }
+            });
+        });
+
+        // ===== 举报按钮 =====
+        $('#report-btn').on('click', function () {
+            $('#report-form').slideToggle(200);
+            $('#report-reason').focus();
+        });
+        $('#report-cancel').on('click', function () {
+            $('#report-form').slideUp(150);
+            $('#report-reason').val('');
+            $('#report-msg').text('');
+        });
+        $('#report-submit').on('click', function () {
+            var reason = $('#report-reason').val().trim();
+            if (!reason) {
+                $('#report-msg').css('color', '#a94442').text('请填写举报原因');
+                return;
+            }
+            var $btn = $(this);
+            $btn.prop('disabled', true).text('提交中…');
+            $.ajax({
+                url: '/report/',
+                type: 'POST',
+                data: {
+                    article_id: {{ article_obj.id }},
+                    reason: reason,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (res) {
+                    $btn.prop('disabled', false).text('提交举报');
+                    if (res.code === 200) {
+                        $('#report-msg').css('color', '#3c763d').text(res.msg);
+                        $('#report-reason').val('');
+                        setTimeout(function () { $('#report-form').slideUp(200); }, 1200);
+                    } else {
+                        $('#report-msg').css('color', '#a94442').text(res.msg);
+                    }
+                },
+                error: function () {
+                    $btn.prop('disabled', false).text('提交举报');
+                    $('#report-msg').css('color', '#a94442').text('请求失败，请稍后再试');
+                }
+            });
+        });
+
+        // ===== 关注作者 =====
+        $('#author-follow-btn').on('click', function () {
+            var $btn = $(this);
+            var userId = $btn.data('user-id');
+            $.ajax({
+                url: '/follow/',
+                type: 'POST',
+                data: { user_id: userId, csrfmiddlewaretoken: '{{ csrf_token }}' },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $btn.toggleClass('following', res.following);
+                        $btn.text(res.following ? '已关注' : '+ 关注');
+                        $('.author-follower-count').text(res.follower_count);
+                    }
+                },
+            });
+        });
+
+        // ===== 文章点赞点踩 =====
+        $(".action").click(function () {
+            var $btn = $(this)
+            var is_up = $btn.hasClass('upup')
+            $.ajax({
+                url: '/updown/',
+                type: 'POST',
+                data: {
+                    is_up: is_up,
+                    article_id: {{ article_id }},
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $("#upup_count").text(res.up_num)
+                        $("#downdown_count").text(res.down_num)
+                        $("#digg_tips").text(res.msg)
+                        setTimeout(function () { $("#digg_tips").text('') }, 1800)
+                    } else {
+                        window.showToast(res.msg, 'error')
+                    }
+                },
+                error: function () {
+                    window.showToast('请求失败,请稍后再试', 'error')
+                }
+            })
+        })
+    </script>
+{% endblock %}

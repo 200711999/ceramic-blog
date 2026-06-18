@@ -1,0 +1,1078 @@
+{% extends "backend/base.html" %}
+
+{% block title %}
+    编辑文章
+{% endblock %}
+
+{% block css %}
+    <link href="https://cdn.jsdelivr.net/npm/@wangeditor/editor@5.1.23/dist/css/style.css" rel="stylesheet">
+    <style>
+        /* ===== 编辑文章页 - 瓷韵雅集主题样式 ===== */
+
+        /* ---------- 卡片 ---------- */
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px 32px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(45, 42, 38, 0.06);
+        }
+        .form-card h3 {
+            text-align: center;
+            margin: 0 0 32px;
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+
+        /* ---------- 错误提示 ---------- */
+        .field-error {
+            background: var(--danger-soft);
+            border: 1px solid var(--danger);
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            color: var(--danger);
+            font-size: 14px;
+            animation: shakeX 0.4s ease;
+        }
+        @keyframes shakeX {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        /* ---------- AI 智能面板 ---------- */
+        .ai-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin-bottom: 28px;
+            box-shadow: 0 1px 2px rgba(45, 42, 38, 0.05);
+            transition: all 0.3s ease;
+        }
+        .ai-panel:hover {
+            box-shadow: 0 2px 8px rgba(45, 42, 38, 0.08);
+            border-left-color: var(--accent-hover);
+        }
+        .ai-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0;
+        }
+        .ai-panel-header span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+        }
+        .ai-panel-header .glyphicon {
+            font-size: 16px;
+            color: var(--accent);
+        }
+        .ai-panel-header .btn-link {
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 0;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .ai-panel-header .btn-link:hover {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .ai-panel-body {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .ai-panel-body .form-control {
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 14px;
+            color: var(--text);
+            transition: all 0.2s ease;
+        }
+        .ai-panel-body .form-control:focus {
+            background: var(--surface);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        .ai-panel-body .btn-sm {
+            border-radius: var(--radius-sm);
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .ai-panel-body .btn-primary {
+            background: var(--accent);
+            color: #f5f0e8;
+            border: none;
+        }
+        .ai-panel-body .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+        .ai-panel-body .btn-default {
+            background: var(--surface);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+        .ai-panel-body .btn-default:hover {
+            background: var(--surface-soft);
+            border-color: var(--border-strong);
+        }
+
+        /* ---------- 表单 ---------- */
+        .form-group {
+            margin-bottom: 24px;
+        }
+        .form-group > label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+        .form-group .form-control {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 14px;
+            background: var(--surface);
+            color: var(--text);
+            transition: all 0.2s ease;
+        }
+        .form-group .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        .form-group .form-control::placeholder {
+            color: var(--text-faint);
+        }
+
+        /* ---------- 标题字数统计 ---------- */
+        #title-counter {
+            display: block;
+            text-align: right;
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            transition: color 0.2s ease;
+        }
+        #title-counter.text-danger {
+            color: var(--danger);
+        }
+
+        /* ---------- 富文本编辑器 ---------- */
+        .editor-wrapper {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--surface);
+            transition: all 0.2s ease;
+        }
+        .editor-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        .editor-wrapper .w-e-toolbar {
+            background: var(--surface-soft) !important;
+            border-bottom: 1px solid var(--border) !important;
+            padding: 8px 12px !important;
+        }
+        .editor-wrapper .w-e-bar-item button {
+            border-radius: 6px !important;
+            transition: all 0.15s ease;
+        }
+        .editor-wrapper .w-e-bar-item button:hover {
+            background: var(--accent-soft) !important;
+            color: var(--accent) !important;
+        }
+        .editor-wrapper .w-e-text-container {
+            background: var(--surface) !important;
+        }
+        .editor-wrapper .w-e-text-placeholder {
+            color: var(--text-faint) !important;
+            font-size: 14px;
+        }
+        /* 编辑器内图片可拖拽缩放 */
+        .editor-wrapper .w-e-text-container img {
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+
+        /* ---------- 图片拖拽上传区 ---------- */
+        .image-dropzone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--surface-soft);
+            margin-bottom: 12px;
+            user-select: none;
+        }
+        .image-dropzone:hover,
+        .image-dropzone.drag-over {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+        .image-dropzone-icon {
+            width: 32px;
+            height: 32px;
+            color: var(--text-muted);
+            margin: 0 auto 6px;
+            display: block;
+        }
+        .image-dropzone-text {
+            font-size: 14px;
+            color: var(--text);
+        }
+        .image-dropzone-link {
+            color: var(--accent);
+            font-weight: 600;
+            text-decoration: underline;
+        }
+        .image-dropzone-hint {
+            font-size: 12px;
+            color: var(--text-faint);
+            display: block;
+            margin-top: 4px;
+        }
+        .image-dropzone.is-uploading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* ---------- 编辑器下方 AI 工具栏 ---------- */
+        .article-ai-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+        .ai-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            user-select: none;
+        }
+        .ai-action-btn:hover {
+            background: var(--surface-soft);
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(26, 58, 92, 0.1);
+        }
+        .ai-action-btn:active {
+            transform: translateY(0);
+        }
+        .ai-action-btn .ai-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+        .ai-action-btn:hover .ai-icon {
+            opacity: 1;
+        }
+        .ai-action-btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* ---------- AI 总结结果面板 ---------- */
+        #ai-summarize-panel {
+            margin-top: 14px;
+            padding: 16px 18px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            animation: slideDown 0.25s ease;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #ai-summarize-panel .ai-summary-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--accent);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #ai-summarize-text {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text);
+            margin-bottom: 14px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* ---------- 小按钮 ---------- */
+        .btn-xs {
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .btn-xs:hover {
+            transform: translateY(-1px);
+        }
+
+        /* ---------- 分类单选框 / 标签复选框 ---------- */
+        .radio-inline, .checkbox-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            margin: 0 8px 8px 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .radio-inline:hover, .checkbox-inline:hover {
+            background: var(--surface-soft);
+            border-color: var(--border-strong);
+        }
+        .radio-inline input, .checkbox-inline input {
+            display: none;
+        }
+        .radio-inline:has(input:checked), .checkbox-inline:has(input:checked) {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* ---------- AI 自动分类按钮 ---------- */
+        .btn-info {
+            background: var(--accent);
+            color: #f5f0e8;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .btn-info:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(26, 58, 92, 0.25);
+        }
+
+        /* ---------- 表单底部操作栏 ---------- */
+        .form-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ---------- 保存按钮（金色） ---------- */
+        .submit-btn--yellow {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 32px;
+            background: #faad14;
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 14px rgba(250, 173, 20, 0.35);
+        }
+        .submit-btn--yellow:hover {
+            background: #ffc53d;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(250, 173, 20, 0.45);
+        }
+        .submit-btn--yellow:active {
+            transform: translateY(0);
+        }
+
+        /* ---------- 取消按钮 ---------- */
+        .btn-default {
+            background: var(--surface);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 20px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .btn-default:hover {
+            background: var(--surface-soft);
+            border-color: var(--border-strong);
+        }
+
+        /* ---------- 辅助文字 ---------- */
+        .text-muted {
+            color: var(--text-muted);
+        }
+        .text-muted a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .text-muted a:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
+        }
+        #ai-auto-tag-btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+    </style>
+{% endblock %}
+
+{% block article %}
+    <div class="form-card">
+        <h3>编辑文章</h3>
+
+        {% if error %}
+            <div class="field-error">{{ error }}</div>
+        {% endif %}
+
+        <div class="ai-panel" id="ai-panel">
+            <div class="ai-panel-header">
+                <span><span class="glyphicon glyphicon-magic"></span> AI 辅助写作</span>
+                <button type="button" class="btn btn-link btn-sm" id="ai-toggle">展开</button>
+            </div>
+            <div class="ai-panel-body" style="display:none;">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="ai-keywords" placeholder="输入关键词或主题...">
+                </div>
+                <div class="form-group">
+                    <select class="form-control" id="ai-style">
+                        <option value="干货帖子">干货帖子</option>
+                        <option value="心情文案">心情文案</option>
+                        <option value="技术教程">技术教程</option>
+                        <option value="润色改写">润色改写(基于已有正文)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="margin-bottom:6px;">字数区间</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="number" id="wc-min" class="form-control" placeholder="最小" min="100" max="5000" value="800" style="width:90px; text-align:center;">
+                        <span style="color:var(--text-muted);">—</span>
+                        <input type="number" id="wc-max" class="form-control" placeholder="最大" min="100" max="5000" value="1500" style="width:90px; text-align:center;">
+                        <span style="color:var(--text-faint); font-size:12px;">字</span>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="ai-generate-btn">一键生成</button>
+                <button type="button" class="btn btn-default btn-sm" id="ai-panel-polish-btn">润色正文</button>
+                <div id="ai-status" class="text-muted" style="margin-top:8px;"></div>
+            </div>
+        </div>
+
+        <form action="/article/edit/{{ article_obj.pk }}/" method="post" id="article-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="title">标题</label>
+                <input type="text" name="title" class="form-control" id="title" maxlength="32" placeholder="请输入标题" value="{{ article_obj.title }}" required>
+                <small class="text-muted" id="title-counter">0 / 32</small>
+            </div>
+            <div class="form-group">
+                <label for="content">正文</label>
+                <div class="editor-wrapper">
+                    <div id="toolbar-container"></div>
+                    <div id="editor-container"></div>
+                </div>
+
+                <!-- 图片拖拽上传区域 -->
+                <div class="image-dropzone" id="image-dropzone">
+                    <input type="file" id="image-dropzone-input" accept="image/*" multiple style="display:none">
+                    <svg class="image-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    <span class="image-dropzone-text">拖拽图片到此处，或 <span class="image-dropzone-link">点击上传</span></span>
+                    <span class="image-dropzone-hint">支持 JPG / PNG / GIF / WebP，单张不超过 10MB</span>
+                </div>
+
+                <!-- AI 工具栏 -->
+                <div class="article-ai-bar">
+                    <button type="button" class="ai-action-btn" id="ai-polish-btn" title="AI 润色">
+                        <svg class="ai-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span>AI 润色</span>
+                    </button>
+                    <button type="button" class="ai-action-btn" id="ai-summarize-btn" title="AI 总结">
+                        <svg class="ai-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                        <span>AI 总结</span>
+                    </button>
+                    <button type="button" class="ai-action-btn" id="ai-continue-btn" title="AI 续写">
+                        <svg class="ai-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                        <span>AI 续写</span>
+                    </button>
+                </div>
+
+                <!-- AI 总结结果面板 -->
+                <div id="ai-summarize-panel" style="display:none;">
+                    <div class="ai-summary-title">AI 总结</div>
+                    <div id="ai-summarize-text"></div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn btn-xs btn-primary" id="ai-summarize-insert">插入正文</button>
+                        <button type="button" class="btn btn-xs btn-default" id="ai-summarize-close">关闭</button>
+                    </div>
+                </div>
+
+                <div id="editor-initial-content" style="display:none">{{ article_obj.content|default:''|safe }}</div>
+                <input type="hidden" name="content" id="content-hidden">
+            </div>
+            <div class="form-group">
+                <label>分类</label>
+                <div id="category-container">
+                    {% if category_queryset %}
+                        {% for category in category_queryset %}
+                            <label class="radio-inline">
+                                <input type="radio" name="category_id" value="{{ category.pk }}"
+                                    {% if article_obj.category_id == category.pk %}checked{% endif %}>
+                                {{ category.name }}
+                            </label>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted">暂无分类,请先 <a href="/category/add/">添加分类</a></span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>标签</label>
+                <div id="tag-container">
+                    {% if tag_queryset %}
+                        {% for tag in tag_queryset %}
+                            <label class="checkbox-inline">
+                                <input type="checkbox" name="tag_id" value="{{ tag.pk }}"
+                                    {% if tag in article_obj.tags.all %}checked{% endif %}>
+                                {{ tag.name }}
+                            </label>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted">暂无标签,请先 <a href="/tag/add/">添加标签</a></span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-info btn-sm" id="ai-auto-tag-btn">
+                    <span class="glyphicon glyphicon-tags"></span> AI 自动分类
+                </button>
+                <span id="ai-auto-tag-status" class="text-muted" style="margin-left:8px;font-size:12px"></span>
+            </div>
+            <div class="form-group">
+                <label>发布状态</label>
+                <label class="radio-inline">
+                    <input type="radio" name="status" value="published" {% if article_obj.status != 'draft' %}checked{% endif %}> 发布
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="status" value="draft" {% if article_obj.status == 'draft' %}checked{% endif %}> 草稿
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="submit-btn--yellow" id="submit-btn">
+                    <span class="glyphicon glyphicon-ok" style="font-size:12px"></span> 保存
+                </button>
+                <a href="/backend/" class="btn btn-default">取消</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script src="https://cdn.jsdelivr.net/npm/@wangeditor/editor@5.1.23/dist/index.js"></script>
+    <script>
+        (function () {
+            var $title = $("#title");
+            var $counter = $("#title-counter");
+            function updateCounter() {
+                var len = $title.val().length;
+                $counter.text(len + " / 32");
+                $counter.toggleClass("text-danger", len > 32);
+            }
+            $title.on("input", updateCounter);
+            updateCounter();
+
+            // Ctrl/Cmd + Enter submit
+            $(document).on("keydown", function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    $("#article-form").submit();
+                }
+            });
+
+            // 简单的 Markdown 转 HTML 函数
+            function markdownToHtml(md) {
+                if (!md) return '';
+                var html = md;
+                html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+                html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+                html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+                html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+                html = html.replace(/```([\s\S]+?)```/g, '<pre><code>$1</code></pre>');
+                html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+                html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+                html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+                var lines = html.split(/\n\n+/);
+                html = lines.map(function (line) {
+                    line = line.trim();
+                    if (!line) return '';
+                    if (line.startsWith('<h') || line.startsWith('<pre') || line.startsWith('<ul') || line.startsWith('<ol') || line.startsWith('<li')) {
+                        return line;
+                    }
+                    if (line.startsWith('<li>')) {
+                        return '<ul>' + line + '</ul>';
+                    }
+                    return '<p>' + line.replace(/\n/g, '<br>') + '</p>';
+                }).join('\n');
+                return html;
+            }
+
+            // wangEditor init
+            var editor = null;
+            var toolbar = null;
+            (function initEditor() {
+                var E = window.wangEditor;
+                if (!E || !E.createEditor) {
+                    console.error('wangEditor not loaded');
+                    return;
+                }
+                var editorConfig = {
+                    placeholder: '请输入正文...',
+                    autoFocus: false,
+                    scroll: false,
+                    MENU_CONF: {
+                        uploadImage: {
+                            customUpload: function (file, insertFn) {
+                                var fd = new FormData();
+                                fd.append('file', file);
+                                $.ajax({
+                                    url: '/upload_image/',
+                                    type: 'POST',
+                                    data: fd,
+                                    processData: false,
+                                    contentType: false,
+                                    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                                });
+                                var reader = new FileReader();
+                                reader.onload = function (e) {
+                                    insertFn(e.target.result, file.name, e.target.result);
+                                    window.showToast('图片已插入', 'success');
+                                };
+                                reader.readAsDataURL(file);
+                            },
+                        },
+                        emotion: {
+                            emotions: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖','😺','😸','😹','😻','😼','😽','🙀','😿','😾']
+                        }
+                    }
+                };
+                editor = E.createEditor({
+                    selector: '#editor-container',
+                    html: '<p><br></p>',
+                    config: editorConfig,
+                    mode: 'default'
+                });
+                var initialContent = $('#editor-initial-content').html();
+                if (initialContent) {
+                    initialContent = initialContent.replace(/src="\/\/media\//g, 'src="/media/');
+                    initialContent = initialContent.replace(/src='\/\/media\//g, "src='/media/");
+                    editor.setHtml(initialContent);
+                }
+                var toolbarConfig = {
+                    toolbarKeys: [
+                        'bold', 'italic', '|',
+                        'blockquote', 'codeBlock', '|',
+                        'emotion', 'insertImage', 'insertLink', '|',
+                        'undo', 'redo'
+                    ]
+                };
+                toolbar = E.createToolbar({
+                    editor: editor,
+                    selector: '#toolbar-container',
+                    config: toolbarConfig,
+                    mode: 'default'
+                });
+            })();
+
+            function getEditorText() {
+                return editor ? editor.getText().trim() : '';
+            }
+
+            // ---- 图片拖拽上传区 ----
+            (function initDropzone() {
+                var $dz = $("#image-dropzone");
+                var $dzInput = $("#image-dropzone-input");
+
+                $dz.on("click", function () { $dzInput.click(); });
+
+                $dz.on("dragover", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $dz.addClass("drag-over");
+                });
+                $dz.on("dragleave", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $dz.removeClass("drag-over");
+                });
+                $dz.on("drop", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $dz.removeClass("drag-over");
+                    uploadDropFiles(e.originalEvent.dataTransfer.files);
+                });
+                $dzInput.on("change", function () {
+                    uploadDropFiles(this.files);
+                    this.value = '';
+                });
+
+                function uploadDropFiles(files) {
+                    if (!files || !files.length) return;
+                    for (var i = 0; i < files.length; i++) {
+                        (function (file) {
+                            if (!/^image\//.test(file.type)) {
+                                window.showToast('请选择图片文件', 'error');
+                                return;
+                            }
+                            if (file.size > 10 * 1024 * 1024) {
+                                window.showToast('图片 ' + file.name + ' 超过 10MB', 'error');
+                                return;
+                            }
+                            $dz.addClass("is-uploading");
+                            var fd = new FormData();
+                            fd.append('file', file);
+                            $.ajax({
+                                url: '/upload_image/',
+                                type: 'POST',
+                                data: fd,
+                                processData: false,
+                                contentType: false,
+                                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                            });
+                            var reader = new FileReader();
+                            reader.onload = function (e) {
+                                $dz.removeClass("is-uploading");
+                                editor.focus(true);
+                                editor.dangerouslyInsertHtml(
+                                    '<p><img src="' + e.target.result + '" alt="' + file.name + '"></p>'
+                                );
+                                window.showToast('图片已插入', 'success');
+                            };
+                            reader.readAsDataURL(file);
+                        })(files[i]);
+                    }
+                }
+            })();
+
+            // Prevent accidental close when there is unsaved content
+            var originalTitle = $title.val().trim();
+            var originalContent = $('#editor-initial-content').html();
+            $(window).on("beforeunload", function (e) {
+                var title = $title.val().trim();
+                var text = getEditorText();
+                if (title !== originalTitle || (editor && editor.getHtml() !== originalContent)) {
+                    return "您有未保存的更改,确定要离开吗?";
+                }
+            });
+            $("#article-form").on("submit", function () {
+                if (!editor) {
+                    window.showToast('编辑器未初始化', 'error');
+                    return false;
+                }
+                var html = editor.getHtml();
+                var text = getEditorText();
+                if (!text) {
+                    window.showToast('请输入文章内容', 'error');
+                    return false;
+                }
+                $("#content-hidden").val(html);
+                $(window).off("beforeunload");
+                window.setBtnLoading($("#submit-btn"), true, "保存中…");
+            });
+
+            // 编辑器下方 AI 快捷按钮
+            $("#ai-polish-btn").on("click", function () {
+                var text = getEditorText();
+                if (!text) {
+                    window.showToast('请先输入正文再使用 AI 润色', 'error');
+                    return;
+                }
+                aiCall({ existing: editor.getHtml(), style: '润色改写' }, $(this), '润色中…');
+            });
+
+            $("#ai-summarize-btn").on("click", function () {
+                var text = getEditorText();
+                if (!text) {
+                    window.showToast('请先输入正文再使用 AI 总结', 'error');
+                    return;
+                }
+                var $btn = $(this);
+                window.setBtnLoading($btn, true, '总结中…');
+                $.ajax({
+                    url: '/ai/summarize/',
+                    type: 'post',
+                    data: {
+                        content: editor.getHtml(),
+                        csrfmiddlewaretoken: "{{ csrf_token }}"
+                    },
+                    success: function (res) {
+                        window.setBtnLoading($btn, false);
+                        if (res.code === 200) {
+                            $("#ai-summarize-text").text(res.summary);
+                            $("#ai-summarize-panel").slideDown(200);
+                            window.showToast('总结完成', 'success');
+                        } else {
+                            window.showToast(res.msg || '总结失败', 'error');
+                        }
+                    },
+                    error: function () {
+                        window.setBtnLoading($btn, false);
+                        window.showToast('请求失败', 'error');
+                    }
+                });
+            });
+
+            $("#ai-continue-btn").on("click", function () {
+                var text = getEditorText();
+                if (!text) {
+                    window.showToast('请先输入正文再使用 AI 续写', 'error');
+                    return;
+                }
+                var $btn = $(this);
+                window.setBtnLoading($btn, true, '续写中…');
+                $.ajax({
+                    url: '/ai/continue/',
+                    type: 'post',
+                    data: {
+                        content: editor.getHtml(),
+                        csrfmiddlewaretoken: "{{ csrf_token }}"
+                    },
+                    success: function (res) {
+                        window.setBtnLoading($btn, false);
+                        if (res.code === 200) {
+                            var html = editor.getHtml();
+                            var append = '<p>' + res.continuation.replace(/\n/g, '</p><p>') + '</p>';
+                            editor.setHtml(html + append);
+                            window.showToast('续写完成', 'success');
+                        } else {
+                            window.showToast(res.msg || '续写失败', 'error');
+                        }
+                    },
+                    error: function () {
+                        window.setBtnLoading($btn, false);
+                        window.showToast('请求失败', 'error');
+                    }
+                });
+            });
+
+            $("#ai-summarize-close").on("click", function () {
+                $("#ai-summarize-panel").slideUp(150);
+            });
+
+            $("#ai-summarize-insert").on("click", function () {
+                var summary = $("#ai-summarize-text").text();
+                if (summary && editor) {
+                    var html = '<blockquote><p><strong>AI 总结：</strong>' + summary.replace(/\n/g, '</p><p>') + '</p></blockquote><p><br></p>';
+                    var sel = window.getSelection();
+                    if (sel && sel.rangeCount > 0 && !editor.isEmpty()) {
+                        editor.dangerouslyInsertHtml(html);
+                    } else {
+                        var currentHtml = editor.getHtml();
+                        if (currentHtml && currentHtml !== '<p><br></p>') {
+                            editor.setHtml(currentHtml + html);
+                        } else {
+                            editor.setHtml(html);
+                        }
+                    }
+                }
+                $("#ai-summarize-panel").slideUp(150);
+                window.showToast('已插入正文', 'success');
+            });
+
+            // AI 面板交互
+            var $aiBody = $(".ai-panel-body");
+            var $aiToggle = $("#ai-toggle");
+            var $aiKeywords = $("#ai-keywords");
+            var $aiStyle = $("#ai-style");
+            var $aiStatus = $("#ai-status");
+
+            $aiToggle.on("click", function () {
+                $aiBody.slideToggle(150);
+                $aiToggle.text($aiBody.is(":visible") ? "收起" : "展开");
+            });
+
+            function aiCall(payload, $btn, loadingText) {
+                window.setBtnLoading($btn, true, loadingText);
+                $aiStatus.text("");
+                payload.wc_min = $("#wc-min").val() || '';
+                payload.wc_max = $("#wc-max").val() || '';
+                $.ajax({
+                    url: '/ai/generate/',
+                    type: 'post',
+                    data: $.extend({ csrfmiddlewaretoken: "{{ csrf_token }}" }, payload),
+                    success: function (res) {
+                        window.setBtnLoading($btn, false);
+                        if (res.code === 200) {
+                            if (res.title) $("#title").val(res.title).trigger("input");
+                            if (res.content && editor) {
+                                var html = markdownToHtml(res.content);
+                                editor.setHtml(html);
+                            }
+                            window.showToast('生成成功', 'success');
+                        } else {
+                            window.showToast(res.msg || '生成失败', 'error');
+                            $aiStatus.text(res.msg || '生成失败');
+                        }
+                    },
+                    error: function () {
+                        window.setBtnLoading($btn, false);
+                        window.showToast('请求失败,请检查网络或 API 配置', 'error');
+                        $aiStatus.text('请求失败');
+                    }
+                });
+            }
+
+            $("#ai-generate-btn").on("click", function () {
+                var kw = $aiKeywords.val().trim();
+                if (!kw) {
+                    window.showToast('请输入关键词', 'error');
+                    return;
+                }
+                aiCall({ keywords: kw, style: $aiStyle.val() }, $(this), '生成中…');
+            });
+
+            $("#ai-panel-polish-btn").on("click", function () {
+                var text = getEditorText();
+                if (!text) {
+                    window.showToast('请先输入正文再润色', 'error');
+                    return;
+                }
+                aiCall({ existing: editor.getHtml(), style: '润色改写' }, $(this), '润色中…');
+            });
+
+            // AI 自动分类/打标签
+            $("#ai-auto-tag-btn").on("click", function () {
+                var title = $("#title").val().trim();
+                var text = getEditorText();
+                if (!title && !text) {
+                    window.showToast('请先填写标题或正文', 'error');
+                    return;
+                }
+                var $btn = $(this);
+                var $status = $("#ai-auto-tag-status");
+                window.setBtnLoading($btn, true, '分析中…');
+                $status.text('');
+                $.ajax({
+                    url: '/ai/auto_tag/',
+                    type: 'post',
+                    data: {
+                        title: title,
+                        content: text,
+                        csrfmiddlewaretoken: "{{ csrf_token }}"
+                    },
+                    success: function (res) {
+                        window.setBtnLoading($btn, false);
+                        if (res.code === 200) {
+                            // Insert newly created category into DOM
+                            if (res.new_category) {
+                                $("#category-container .text-muted").remove();
+                                if (!$("input[name=category_id][value=" + res.new_category.id + "]").length) {
+                                    $("#category-container").append(
+                                        '<label class="radio-inline">' +
+                                        '<input type="radio" name="category_id" value="' + res.new_category.id + '"> ' +
+                                        res.new_category.name +
+                                        '</label>'
+                                    );
+                                }
+                            }
+                            // Insert newly created tags into DOM
+                            if (res.new_tags && res.new_tags.length) {
+                                $("#tag-container .text-muted").remove();
+                                res.new_tags.forEach(function (t) {
+                                    if (!$("input[name=tag_id][value=" + t.id + "]").length) {
+                                        $("#tag-container").append(
+                                            '<label class="checkbox-inline">' +
+                                            '<input type="checkbox" name="tag_id" value="' + t.id + '"> ' +
+                                            t.name +
+                                            '</label>'
+                                        );
+                                    }
+                                });
+                            }
+                            // Select category
+                            if (res.category_id) {
+                                $("input[name=category_id]").prop("checked", false);
+                                $("input[name=category_id][value=" + res.category_id + "]").prop("checked", true);
+                            }
+                            // Select tags
+                            if (res.tag_ids && res.tag_ids.length) {
+                                $("input[name=tag_id]").prop("checked", false);
+                                res.tag_ids.forEach(function (tid) {
+                                    $("input[name=tag_id][value=" + tid + "]").prop("checked", true);
+                                });
+                            }
+                            window.showToast('已自动选择分类和标签', 'success');
+                        } else {
+                            window.showToast(res.msg || '分类失败', 'error');
+                            $status.text(res.msg || '分类失败');
+                        }
+                    },
+                    error: function () {
+                        window.setBtnLoading($btn, false);
+                        window.showToast('请求失败', 'error');
+                        $status.text('请求失败');
+                    }
+                });
+            });
+        })();
+    </script>
+{% endblock %}

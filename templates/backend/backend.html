@@ -1,0 +1,365 @@
+{% extends 'backend/base.html' %}
+{% load my_tag %}
+
+{% block article %}
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>文章标题</th>
+            <th>状态</th>
+            <th>发布时间</th>
+            <th>浏览</th>
+            <th>赞</th>
+            <th>踩</th>
+            <th>评论</th>
+            <th colspan="2">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for article in article_queryset %}
+            <tr>
+                <td>{{ article.pk }}</td>
+                <td><a href="/index/{{ user_obj.username }}/p/{{ article.pk }}/">{{ article.title }}</a></td>
+                <td>
+                    {% if article.status == 'draft' %}
+                        <span style="color:var(--text-faint);font-size:12px">草稿</span>
+                    {% else %}
+                        <span style="color:#5A8982;font-size:12px">已发布</span>
+                    {% endif %}
+                </td>
+                <td>{{ article.create_time|date:'Y-m-d H:i' }}</td>
+                <td>{{ article.view_count }}</td>
+                <td>{{ article.up_num }}</td>
+                <td>{{ article.down_num }}</td>
+                <td>{{ article.comment_num }}</td>
+                <td><a href="/article/edit/{{ article.pk }}/" class="btn btn-default btn-xs">编辑</a></td>
+                <td><a article_id="{{ article.id }}" href="#" class="btn btn-danger btn-xs is_delete">删除</a></td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="10" style="text-align:center;color:var(--text-muted);padding:40px">暂无文章</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block category %}
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>分类名</th>
+            <th colspan="2">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for category in category_queryset %}
+            <tr data-id="{{ category.pk }}">
+                <td>{{ category.pk }}</td>
+                <td class="category-name">{{ category.name }}</td>
+                <td><a href="#" class="btn btn-default btn-xs category-edit">编辑</a></td>
+                <td><a href="#" class="btn btn-danger btn-xs category-delete">删除</a></td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="4" style="text-align:center;color:var(--text-muted);padding:40px">暂无分类</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+
+{% block tag %}
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>标签</th>
+            <th colspan="2">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for tag in tag_queryset %}
+            <tr data-id="{{ tag.pk }}">
+                <td>{{ tag.pk }}</td>
+                <td class="tag-name">{{ tag.name }}</td>
+                <td><a href="#" class="btn btn-default btn-xs tag-edit">编辑</a></td>
+                <td><a href="#" class="btn btn-danger btn-xs tag-delete">删除</a></td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="4" style="text-align:center;color:var(--text-muted);padding:40px">暂无标签</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block comment %}
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>文章</th>
+            <th>内容</th>
+            <th>时间</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for comment in comment_queryset %}
+            <tr data-id="{{ comment.pk }}">
+                <td>{{ comment.pk }}</td>
+                <td>{{ comment.article.title }}</td>
+                <td>{{ comment.content|get_desc }}</td>
+                <td>{{ comment.create_time|date:'Y-m-d H:i' }}</td>
+                <td><a href="#" class="btn btn-danger btn-xs comment-delete">删除</a></td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="5" style="text-align:center;color:var(--text-muted);padding:40px">暂无评论</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block userinfo %}
+    <div class="form-card">
+        <form action="/edit/user/" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" name="username" class="form-control" id="username" value="{{ user_obj.username }}">
+            </div>
+            <div class="form-group">
+                <label for="age">年龄</label>
+                <input type="number" name="age" class="form-control" id="age" value="{{ user_obj.age }}">
+            </div>
+            <div class="form-group">
+                <label for="gender">性别</label>
+                <input type="text" name="gender" class="form-control" id="gender" value="{{ user_obj.gender|default:'' }}">
+            </div>
+            <div class="form-group">
+                <label for="phone">手机号</label>
+                <input type="text" name="phone" class="form-control" id="phone" value="{{ user_obj.phone|default:'' }}">
+            </div>
+            <div class="form-group">
+                <label for="site_name">站点名</label>
+                <input type="text" name="site_name" class="form-control" id="site_name" value="{{ user_obj.blog.site_name }}">
+            </div>
+            <div class="form-group">
+                <label for="site_title">站点标题</label>
+                <input type="text" name="site_title" class="form-control" id="site_title" value="{{ user_obj.blog.site_title }}">
+            </div>
+            <div class="form-group">
+                <label for="site_theme">站点样式 (CSS 文件)</label>
+                <input type="file" name="site_theme" class="form-control" id="site_theme" accept=".css">
+            </div>
+            <div style="text-align:right">
+                <button type="submit" class="btn btn-primary">保存修改</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+
+{% block js %}
+    <script>
+        // 文章删除
+        $(".is_delete").click(function (e) {
+            e.preventDefault()
+            if (!confirm('确定删除这篇文章吗?此操作不可恢复')) return
+
+            var article_id = $(this).attr('article_id')
+            var $row = $(this).closest('tr')
+
+            $.ajax({
+                url: "/article/delete/",
+                type: "post",
+                data: {
+                    article_id: article_id,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $row.fadeOut(180, function () { $(this).remove() })
+                        window.showToast(res.msg || '删除成功', 'success')
+                    } else {
+                        window.showToast(res.msg || '删除失败', 'error')
+                    }
+                },
+                error: function () {
+                    window.showToast('请求失败,请稍后再试', 'error')
+                }
+            })
+        })
+
+        // 分类编辑
+        $(document).on('click', '.category-edit', function (e) {
+            e.preventDefault()
+            var $row = $(this).closest('tr')
+            var id = $row.data('id')
+            var currentName = $row.find('.category-name').text()
+
+            var newName = prompt('请输入新的分类名称:', currentName)
+            if (newName === null) return
+            newName = newName.trim()
+            if (!newName) {
+                window.showToast('分类名称不能为空', 'error')
+                return
+            }
+            if (newName === currentName) return
+
+            $.ajax({
+                url: "/category/edit/",
+                type: "post",
+                data: {
+                    category_id: id,
+                    name: newName,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $row.find('.category-name').text(newName)
+                        window.showToast('修改成功', 'success')
+                    } else {
+                        window.showToast(res.msg || '修改失败', 'error')
+                    }
+                },
+                error: function () {
+                    window.showToast('请求失败,请稍后再试', 'error')
+                }
+            })
+        })
+
+        // 分类删除
+        $(document).on('click', '.category-delete', function (e) {
+            e.preventDefault()
+            if (!confirm('确定删除该分类吗?')) return
+
+            var $row = $(this).closest('tr')
+            var id = $row.data('id')
+
+            $.ajax({
+                url: "/category/delete/",
+                type: "post",
+                data: {
+                    category_id: id,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $row.fadeOut(180, function () { $(this).remove() })
+                        window.showToast('删除成功', 'success')
+                    } else {
+                        window.showToast(res.msg || '删除失败', 'error')
+                    }
+                },
+                error: function () {
+                    window.showToast('请求失败,请稍后再试', 'error')
+                }
+            })
+        })
+
+        // 标签编辑
+        $(document).on('click', '.tag-edit', function (e) {
+            e.preventDefault()
+            var $row = $(this).closest('tr')
+            var id = $row.data('id')
+            var currentName = $row.find('.tag-name').text()
+
+            var newName = prompt('请输入新的标签名称:', currentName)
+            if (newName === null) return
+            newName = newName.trim()
+            if (!newName) {
+                window.showToast('标签名称不能为空', 'error')
+                return
+            }
+            if (newName === currentName) return
+
+            $.ajax({
+                url: "/tag/edit/",
+                type: "post",
+                data: {
+                    tag_id: id,
+                    name: newName,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $row.find('.tag-name').text(newName)
+                        window.showToast('修改成功', 'success')
+                    } else {
+                        window.showToast(res.msg || '修改失败', 'error')
+                    }
+                },
+                error: function () {
+                    window.showToast('请求失败,请稍后再试', 'error')
+                }
+            })
+        })
+
+        // 标签删除
+        $(document).on('click', '.tag-delete', function (e) {
+            e.preventDefault()
+            if (!confirm('确定删除该标签吗?')) return
+
+            var $row = $(this).closest('tr')
+            var id = $row.data('id')
+
+            $.ajax({
+                url: "/tag/delete/",
+                type: "post",
+                data: {
+                    tag_id: id,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $row.fadeOut(180, function () { $(this).remove() })
+                        window.showToast('删除成功', 'success')
+                    } else {
+                        window.showToast(res.msg || '删除失败', 'error')
+                    }
+                },
+                error: function () {
+                    window.showToast('请求失败,请稍后再试', 'error')
+                }
+            })
+        })
+
+        // 评论删除
+        $(document).on('click', '.comment-delete', function (e) {
+            e.preventDefault()
+            if (!confirm('确定删除该评论吗?')) return
+
+            var $row = $(this).closest('tr')
+            var id = $row.data('id')
+
+            $.ajax({
+                url: "/comment/manage/delete/",
+                type: "post",
+                data: {
+                    comment_id: id,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                },
+                success: function (res) {
+                    if (res.code === 200) {
+                        $row.fadeOut(180, function () { $(this).remove() })
+                        window.showToast('删除成功', 'success')
+                    } else {
+                        window.showToast(res.msg || '删除失败', 'error')
+                    }
+                },
+                error: function () {
+                    window.showToast('请求失败,请稍后再试', 'error')
+                }
+            })
+        })
+
+    </script>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    注册
+{% endblock %}
+
+{% block nav_right %}
+{% endblock %}
+
+
+{% block nav_title %}
+    注册
+{% endblock %}
+
+{% block content %}
+    <div class="auth-card">
+        <h2>加入瓷韵雅集</h2>
+        <form novalidate>
+            {% csrf_token %}
+            <!-- 头像 -->
+            <div class="form-group" style="text-align:center">
+                <label for="file" style="cursor:pointer;display:inline-block">
+                    <img id="avatar" src="/static/image/default.png" alt="头像"
+                         style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px dashed var(--border-strong);transition:var(--transition)">
+                    <div style="color:var(--text-muted);font-size:12px;margin-top:8px">点击上传雅像</div>
+                </label>
+                <input type="file" style="display: none" id="file" name="avatar">
+            </div>
+
+            <!-- 用户名 -->
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" class="form-control" id="username" name="username" placeholder="2-8 位英文/数字/下划线">
+                <span id="username_error" class="field-error"></span>
+            </div>
+
+            <!-- 密码 -->
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="3-12 位">
+                <span id="password_error" class="field-error"></span>
+            </div>
+
+            <!-- 确认密码 -->
+            <div class="form-group">
+                <label for="re_password">确认密码</label>
+                <input type="password" class="form-control" id="re_password" name="re_password" placeholder="再输入一次">
+                <span id="re_password_error" class="field-error"></span>
+            </div>
+
+            <!-- 邮箱 -->
+            <div class="form-group">
+                <label for="email">邮箱</label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="example@mail.com">
+                <span id="email_error" class="field-error"></span>
+            </div>
+
+            <!-- 站点标题 -->
+            <div class="form-group">
+                <label for="site_title">站点标题</label>
+                <input type="text" class="form-control" id="site_title" name="site_title" placeholder="为你的瓷苑起个名字">
+                <span id="site_title_error" class="field-error"></span>
+            </div>
+
+            <!-- 提交 -->
+            <button id="register_btn" type="button" class="btn btn-primary">注册</button>
+
+            <div class="auth-footer">
+                已有雅号?<a href="/login/">去登录</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+
+{% block js %}
+    <script>
+        // 头像预览
+        $("#file").change(function () {
+            var file = $("#file")[0].files[0]
+            if (!file) return
+            var file_read = new FileReader()
+            file_read.readAsDataURL(file)
+            file_read.onload = function () {
+                $("#avatar").attr('src', file_read.result)
+            }
+        })
+
+        // 注册按钮
+        $("#register_btn").click(function () {
+            var $btn = $(this)
+
+            var form_data = new FormData()
+            form_data.append("username", $("#username").val())
+            form_data.append("password", $("#password").val())
+            form_data.append("re_password", $("#re_password").val())
+            form_data.append("email", $("#email").val())
+            form_data.append("site_title", $("#site_title").val())
+            if ($("#file")[0].files[0]) {
+                form_data.append("avatar", $("#file")[0].files[0])
+            }
+            form_data.append("csrfmiddlewaretoken", "{{ csrf_token }}")
+
+            window.setBtnLoading($btn, true, '注册中…')
+
+            $.ajax({
+                url: '/register/',
+                type: 'post',
+                contentType: false,
+                processData: false,
+                data: form_data,
+                success: function (res) {
+                    window.setBtnLoading($btn, false)
+                    $(".field-error").text("")
+
+                    if (res.code === 200) {
+                        window.showToast('注册成功', 'success')
+                        setTimeout(function () { location.href = '/login/' }, 700)
+                    } else {
+                        var error_msg = res.msg
+                        for (var key in error_msg) {
+                            $("#" + key + "_error").text(error_msg[key])
+                        }
+                    }
+                },
+                error: function () {
+                    window.setBtnLoading($btn, false)
+                    window.showToast('请求失败,请稍后再试', 'error')
+                }
+            })
+        })
+
+        // 回车提交
+        $("form").keydown(function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault()
+                $("#register_btn").click()
+            }
+        })
+    </script>
+{% endblock %}
