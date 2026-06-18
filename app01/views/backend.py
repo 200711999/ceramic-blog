@@ -115,7 +115,9 @@ class EditArticle(View):
     def get(self, request, article_id):
         user = request.user
         blog = user.blog
-        article_obj = Article.objects.filter(id=article_id).first()
+        article_obj = Article.objects.filter(id=article_id, blog=blog).first()
+        if not article_obj:
+            return redirect('/backend/')
         category_queryset = Category.objects.filter(blog=blog)
         tag_queryset = Tag.objects.filter(blog=blog)
         return render(request, 'backend/edit_article.html', locals())
@@ -130,7 +132,7 @@ class EditArticle(View):
         category_id = request.POST.get('category_id')
         tag_id = request.POST.getlist('tag_id')
 
-        article_obj = Article.objects.filter(pk=article_id).first()
+        article_obj = Article.objects.filter(pk=article_id, blog=blog).first()
         if not article_obj:
             return redirect('/backend/')
 
@@ -185,11 +187,12 @@ class EditArticle(View):
 class DeleteArticle(View):
     @is_login_method
     def post(self, request):
+        user = request.user
         article_id = request.POST.get('article_id')
-        article_obj = Article.objects.filter(pk=article_id).first()
+        article_obj = Article.objects.filter(pk=article_id, blog=user.blog).first()
         if not article_obj:
             return JsonResponse(
-                {'code': 400, 'msg': '文章不存在，错误id'}
+                {'code': 400, 'msg': '文章不存在或无权操作'}
             )
 
         article_obj.is_delete = True
