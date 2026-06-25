@@ -27,6 +27,56 @@
 
 ---
 
+## 界面预览
+
+### 首页与信息流
+
+首页展示最新文章列表，左侧可按分类、标签筛选，右侧聚合社区公告、关注动态和个人信息卡片，支持站内通知实时提醒。
+
+![首页文章流](docs/screenshots/homepage-feed.png)
+
+点击导航栏通知图标可查看评论、点赞、关注等消息提醒，方便用户及时参与互动。
+
+![通知中心](docs/screenshots/homepage-notifications.png)
+
+### 用户注册
+
+注册页支持上传头像、填写用户名/密码/邮箱，并可设置个人站点标题，注册后即可拥有独立的陶瓷博客站点。
+
+![注册页面](docs/screenshots/register.png)
+
+### 用户登录
+
+登录页支持用户名或邮箱登录，提供验证码验证、密码找回入口，并支持快速切换到注册页面。
+
+![登录页面](docs/screenshots/login.png)
+
+### 文章发布与 AI 辅助
+
+文章发布页集成 wangEditor 富文本编辑器，支持拖拽或点击上传图片；顶部可展开 AI 辅助写作面板，底部提供 AI 润色、总结、续写等一键操作，降低创作门槛。
+
+![发布文章](docs/screenshots/article-publish.png)
+
+### 3D 陶瓷展览
+
+“陶瓷艺术展览”页面以卡片形式陈列各类陶瓷展品，点击即可进入详情页。
+
+![陶瓷艺术展览](docs/screenshots/exhibition-gallery.png)
+
+3D 展品详情页基于 Three.js 渲染模型，右侧同步展示器物名称、年代、工艺介绍，支持旋转、缩放等交互浏览。
+
+![3D 展品展示](docs/screenshots/exhibition-3d.png)
+
+### 后台管理
+
+管理员通过独立后台登录页进入 Django 管理后台，可对用户、文章、分类、标签、评论等内容进行统一维护。
+
+![后台登录](docs/screenshots/admin-login.png)
+
+![后台用户管理](docs/screenshots/admin-users.png)
+
+---
+
 ## 技术栈
 
 - **后端**：Python 3.12 + Django 4.2.10
