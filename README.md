@@ -87,6 +87,7 @@
 - **HTML 净化**：bleach
 - **AI 接口**：SiliconFlow / DeepSeek（HTTP 请求）
 - **环境变量**：python-dotenv
+- **缓存**：Redis + django-redis
 
 ---
 
@@ -95,6 +96,7 @@
 - Python 3.10+
 - MySQL 5.7+（推荐 8.0）
 - pip / virtualenv
+- Redis 5.0+（用于页面缓存）
 - 可选：Git LFS（如需上传 3D 模型等大文件到 GitHub）
 
 ---
@@ -234,6 +236,51 @@ djangoProject14/
 AI 功能默认调用 SiliconFlow 的 API，并支持 DeepSeek 官方作为备用通道。只需要在 `.env` 中配置对应的 `AI_API_KEY` 即可。
 
 如需更换模型或接口，修改 `.env` 中的 `AI_MODEL` 和 `AI_BASE_URL`，或修改 `djangoProject14/settings.py` 中的默认值。
+
+---
+
+## Redis 缓存配置说明
+
+项目已接入 Redis 作为 Django 缓存后端，用于加速首页、个人站点、文章详情、陶瓷展览等公共页面的访问速度。
+
+当前默认配置（`djangoProject14/settings.py`）：
+
+```python
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://:123456@127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+        },
+        "KEY_PREFIX": "ceramic_blog",
+    }
+}
+```
+
+### 启动 Redis
+
+本地开发请确保 Redis 服务已启动：
+
+```bash
+# Windows（使用 MSYS2 / Git Bash）
+redis-server
+
+# 或使用 Windows 版 Redis 服务
+```
+
+### 缓存策略
+
+- **未登录用户**：首页、展览页、个人站点、文章详情页会被缓存，重复访问直接从 Redis 读取。
+- **已登录用户**：不走页面缓存，避免展示错误的个性化内容（如通知、关注动态）。
+- **数据变更时自动清缓存**：发表/编辑/删除文章、新增/修改分类标签、评论、点赞、关注等操作会自动清除相关缓存。
+
+### 生产环境建议
+
+- 将 Redis 密码、地址、端口改为环境变量读取，不要硬编码在 `settings.py` 中。
+- 建议为生产环境单独配置 Redis 实例，并启用持久化或高可用方案。
 
 ---
 

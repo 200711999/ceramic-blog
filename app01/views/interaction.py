@@ -3,6 +3,7 @@ from django.views import View
 
 from app01.models import User, Article, Comment, CommentLike, Notification, Follow, Report
 from app01.utils.dors import is_login_method
+from app01.utils.cache_helper import clear_cache_patterns
 
 
 class CommentView(View):
@@ -49,6 +50,7 @@ class CommentView(View):
         backend['code'] = 200
         backend['msg'] = '评论成功'
         backend['comment_num'] = article_obj.comment_num
+        clear_cache_patterns('article')
         return JsonResponse(backend)
 
 
@@ -90,6 +92,7 @@ class CommentDeleteView(View):
         comment.delete()
         article.comment_num = Comment.objects.filter(article=article).count()
         article.save()
+        clear_cache_patterns('article')
         return JsonResponse({'code': 200, 'msg': '删除成功', 'comment_num': article.comment_num})
 
 
@@ -153,6 +156,7 @@ class FollowToggleView(View):
             )
 
         follower_count = Follow.objects.filter(followed=target).count()
+        clear_cache_patterns('site')
         return JsonResponse({
             'code': 200,
             'following': following,

@@ -6,6 +6,7 @@ from app01.models import Article, Category, Tag, Comment, Follow, Notification
 from app01.utils.dors import is_login_method
 from app01.utils.text_similarity import find_most_similar_article
 from app01.utils.image_processor import convert_base64_images
+from app01.utils.cache_helper import clear_cache_patterns
 
 
 class Backend(View):
@@ -107,6 +108,7 @@ class AddArticle(View):
             ]
             Notification.objects.bulk_create(notifications)
 
+        clear_cache_patterns('index', 'site', 'article')
         return redirect(f"/index/{user_obj.username}/p/{article_obj.pk}/")
 
 
@@ -181,6 +183,7 @@ class EditArticle(View):
         article_obj.status = request.POST.get('status', article_obj.status)
         article_obj.save()
         article_obj.tags.set(tag_id)
+        clear_cache_patterns('index', 'site', 'article')
         return redirect(f"/index/{user.username}/p/{article_obj.pk}/")
 
 
@@ -197,6 +200,7 @@ class DeleteArticle(View):
 
         article_obj.is_delete = True
         article_obj.save()
+        clear_cache_patterns('index', 'site', 'article')
         return JsonResponse(
             {'code': 200, 'msg': '删除成功'}
         )
@@ -251,6 +255,7 @@ class AddCategory(View):
         if error:
             return render(request, 'backend/add_category.html', {'error': error, 'name': name})
         Category.objects.create(name=name, blog=blog)
+        clear_cache_patterns('site')
         return redirect('/backend/')
 
 
@@ -273,6 +278,7 @@ class AddTag(View):
         if error:
             return render(request, 'backend/add_tag.html', {'error': error, 'name': name})
         Tag.objects.create(name=name, blog=blog)
+        clear_cache_patterns('site')
         return redirect('/backend/')
 
 
@@ -296,6 +302,7 @@ class EditCategory(View):
 
         category_obj.name = name
         category_obj.save()
+        clear_cache_patterns('site')
         return JsonResponse({'code': 200, 'msg': '修改成功'})
 
 
@@ -313,6 +320,7 @@ class DeleteCategory(View):
             return JsonResponse({'code': 400, 'msg': '该分类下有文章，无法删除'})
 
         category_obj.delete()
+        clear_cache_patterns('site')
         return JsonResponse({'code': 200, 'msg': '删除成功'})
 
 
@@ -336,6 +344,7 @@ class EditTag(View):
 
         tag_obj.name = name
         tag_obj.save()
+        clear_cache_patterns('site')
         return JsonResponse({'code': 200, 'msg': '修改成功'})
 
 
@@ -350,6 +359,7 @@ class DeleteTag(View):
             return JsonResponse({'code': 400, 'msg': '标签不存在'})
 
         tag_obj.delete()
+        clear_cache_patterns('site')
         return JsonResponse({'code': 200, 'msg': '删除成功'})
 
 
@@ -369,5 +379,6 @@ class ManageCommentDelete(View):
         comment_num = Comment.objects.filter(article=article_obj).count()
         article_obj.comment_num = comment_num
         article_obj.save()
+        clear_cache_patterns('article')
 
         return JsonResponse({'code': 200, 'msg': '删除成功', 'comment_num': comment_num})

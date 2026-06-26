@@ -3,11 +3,14 @@ from django.http import JsonResponse
 from django.views import View
 from django.db.models import F, Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.utils.decorators import method_decorator
 
 from app01.models import User, Blog, Article, UpAndDown, Comment, Follow
 from app01.utils.dors import is_login_method
+from app01.utils.cache_helper import cache_page_for_anonymous, clear_cache_patterns
 
 
+@method_decorator(cache_page_for_anonymous(60 * 5, key_prefix='index'), name='get')
 class Index(View):
     def get(self, request):
         user = request.user
@@ -70,6 +73,7 @@ class Index(View):
         return render(request, 'index.html', locals())
 
 
+@method_decorator(cache_page_for_anonymous(60 * 15, key_prefix='exhibition'), name='get')
 class Exhibition(View):
     def get(self, request):
         NEW_IMGS = [
@@ -185,6 +189,7 @@ class Exhibition(View):
         return render(request, 'exhibition.html', {'items': items})
 
 
+@method_decorator(cache_page_for_anonymous(60 * 5, key_prefix='site'), name='get')
 class Site(View):
     def get(self, request, username, condition=None, value=None):
         user_obj = User.objects.filter(username=username).first()
@@ -234,6 +239,7 @@ class Site(View):
         return render(request, 'site.html', locals())
 
 
+@method_decorator(cache_page_for_anonymous(60 * 2, key_prefix='article'), name='get')
 class ArticleDetail(View):
     def get(self, request, username, article_id):
         user_obj = User.objects.filter(username=username).first()
@@ -343,4 +349,5 @@ class UpDown(View):
         backend['code'] = 200
         backend['up_num'] = article_obj.up_num
         backend['down_num'] = article_obj.down_num
+        clear_cache_patterns('article')
         return JsonResponse(backend)
