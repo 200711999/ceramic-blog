@@ -35,7 +35,7 @@ urlpatterns = [
     path('index/<str:username>/', views.Site.as_view(), name='site'),
 
     # 侧边栏路由：分类、标签、日期
-    re_path('^index/(?P<username>\w+)/(?P<condition>category|tag|date)/(?P<value>[\d-]+)/$', views.Site.as_view()),
+    re_path(r'^index/(?P<username>\w+)/(?P<condition>category|tag|date)/(?P<value>[\d-]+)/$', views.Site.as_view()),
 
     # 文章详情页
     re_path(r"^index/(?P<username>\w+)/p/(?P<article_id>\d+)/$", views.ArticleDetail.as_view()),
